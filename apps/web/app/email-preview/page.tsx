@@ -27,15 +27,59 @@ function getPreviewConfigs(): Record<PreviewTab, EmailPreviewConfig> {
   return {
     customer: {
       title: 'Customer Confirmation Preview',
-      subject: 'Booking received: bk_ab12cd34ef56',
+      subject: 'Cruzn Clean order comfermation',
       description: 'Sent when customer email confirmation preference is enabled.',
       htmlPreview:
-        '<p>Hi Jordan Cruz,</p><p>Thanks for your booking request. We saved your intake details.</p><p><strong>Vehicle:</strong> 2022 Tesla Model 3 (White)</p><p><strong>Selected Services:</strong> Standard Detail, Ceramic Coating</p><p><strong>Estimated Total:</strong> $689</p><p>Next step: choose your appointment time on Cal.com.</p>',
+        "<div style='margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#10150f;'>" +
+        "<div style='max-width:700px;margin:0 auto;padding:24px 16px;'>" +
+        "<div style='background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;'>" +
+        "<div style='background:#10150f;padding:16px 20px;'>" +
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'><tr>" +
+        "<td style='color:#ffffff;font-size:22px;font-weight:700;'>Cruzn <span style='color:#8cc0d6;'>Clean</span></td>" +
+        "<td style='text-align:right;font-size:12px;'>" +
+        "<a href='https://www.cruznclean.com' style='color:#e5e7eb;text-decoration:none;margin-left:12px;'>Home</a>" +
+        "<a href='https://www.cruznclean.com/services' style='color:#e5e7eb;text-decoration:none;margin-left:12px;'>Services</a>" +
+        "<a href='https://www.cruznclean.com/booking' style='color:#e5e7eb;text-decoration:none;margin-left:12px;'>Book</a>" +
+        '</td></tr></table></div>' +
+        "<div style='padding:20px;'>" +
+        "<p style='margin:0;font-size:12px;color:#6b7280;'>Order Number</p>" +
+        "<p style='margin:4px 0 0 0;font-size:16px;font-weight:700;color:#7f0912;'>bk_ab12cd34ef56</p>" +
+        "<p style='margin:4px 0 0 0;font-size:13px;color:#374151;'>Order Name: Jordan Cruz</p>" +
+        "<div style='margin-top:18px;padding:14px;border:1px solid #bbf7d0;background:#f0fdf4;border-radius:10px;'>" +
+        "<p style='margin:0;font-size:28px;font-weight:800;color:#166534;'>THANK YOU ✓</p>" +
+        "<p style='margin:6px 0 0 0;font-size:13px;color:#166534;'>Your booking intake has been confirmed.</p>" +
+        '</div>' +
+        "<h2 style='margin:18px 0 8px 0;font-size:18px;color:#10150f;'>Receipt</h2>" +
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>" +
+        "<tr><td style='padding:8px;background:#f9fafb;font-weight:700;font-size:13px;'>Name</td><td style='padding:8px;background:#f9fafb;font-size:13px;text-align:right;'>Jordan Cruz</td></tr>" +
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Address</td><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>123 Main St, Los Angeles, CA 90210</td></tr>" +
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Number</td><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>(555) 123-4567</td></tr>" +
+        '</table>' +
+        "<div style='margin-top:14px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;'>" +
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>" +
+        "<tr><td style='padding:10px;background:#111827;color:#ffffff;font-size:12px;font-weight:700;'>Service</td><td style='padding:10px;background:#111827;color:#ffffff;font-size:12px;font-weight:700;text-align:right;'>Cost</td></tr>" +
+        "<tr><td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;'>Vehicle 1 - 2022 Tesla Model 3 (White) - Standard Detail</td><td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;text-align:right;'>$189</td></tr>" +
+        "<tr><td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;'>Vehicle 1 - 2022 Tesla Model 3 (White) - Ceramic Coating</td><td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;text-align:right;'>$500</td></tr>" +
+        "<tr><td style='padding:8px;background:#f9fafb;font-size:13px;font-weight:700;'>Service charge cost</td><td style='padding:8px;background:#f9fafb;font-size:13px;text-align:right;'>$189</td></tr>" +
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;font-weight:700;'>Other services</td><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>$500</td></tr>" +
+        "<tr><td style='padding:10px;background:#7f0912;color:#ffffff;font-size:14px;font-weight:800;'>Total amount due</td><td style='padding:10px;background:#7f0912;color:#ffffff;font-size:14px;font-weight:800;text-align:right;'>$689</td></tr>" +
+        '</table></div>' +
+        "<div style='margin-top:14px;padding:12px;border:1px solid #fecaca;background:#fff1f2;border-radius:10px;'>" +
+        "<p style='margin:0;font-size:13px;font-weight:700;color:#7f0912;'>Payment info</p>" +
+        "<p style='margin:6px 0 0 0;font-size:13px;color:#7f0912;'>Payment will be concluded by a 50%deposite on sight ($344.5) and 50% deposite on compleation ($344.5).</p>" +
+        '</div>' +
+        "<p style='margin:14px 0 0 0;font-size:13px;'>" +
+        "<a href='https://www.cruznclean.com/terms' style='color:#7f0912;font-weight:700;text-decoration:none;'>Terms & Conditions</a> | " +
+        "<a href='https://www.cruznclean.com/faq' style='color:#7f0912;font-weight:700;text-decoration:none;'>Service Readiness</a></p>" +
+        "<p style='margin:10px 0 0 0;font-size:13px;color:#374151;'>For any inquiries call/email: (555) 123-4567 | support@cruznclean.com</p>" +
+        '</div></div></div></div>',
       variables: [
         { key: 'booking.bookingId', type: 'string', fallback: 'bk_xxxxxxxxxxxx' },
         { key: 'booking.submittedAt', type: 'string', fallback: '2026-02-14T19:22:10Z' },
         { key: 'customer.fullName', type: 'string', fallback: 'Jordan Cruz' },
         { key: 'customer.email', type: 'string', fallback: 'jordan@example.com' },
+        { key: 'customer.phone', type: 'string', fallback: '(555) 123-4567' },
+        { key: 'customer.address', type: 'string', fallback: '123 Main St, Los Angeles, CA 90210' },
         { key: 'vehicles', type: 'string', fallback: '[{...}]' },
         { key: 'estimate.grandTotal', type: 'number', fallback: '689' },
       ],
