@@ -4,6 +4,7 @@
 
 :root {
   color-scheme: light;
+  --site-header-height: 84px;
 }
 
 * {
@@ -37,6 +38,10 @@ a {
 }
 
 @media (max-width: 1023px) {
+  :root {
+    --site-header-height: 130px;
+  }
+
   .dock-shell {
     position: fixed;
     bottom: 0;
@@ -52,6 +57,10 @@ a {
 }
 
 @media (max-width: 767px) {
+  :root {
+    --site-header-height: 126px;
+  }
+
   .dock-shell {
     max-height: 72vh;
     overflow-y: auto;

@@ -14,11 +14,17 @@ export default function HomePage(): JSX.Element {
   return (
     <SiteShell>
       <HeroSection />
-      <ServicesSection />
-      <ProcessSection />
-      <GalleryPreviewSection />
-      <ResultsSection />
-      <TestimonialsSection />
+      <div className="bg-gradient-to-b from-[#f3f6f5] via-[#f8f8f8] to-white">
+        <ServicesSection />
+        <ProcessSection />
+      </div>
+      <div className="bg-white">
+        <GalleryPreviewSection />
+        <ResultsSection />
+      </div>
+      <div className="bg-gradient-to-b from-white to-[#f3f6f5]">
+        <TestimonialsSection />
+      </div>
       <CtaSection />
     </SiteShell>
   );
