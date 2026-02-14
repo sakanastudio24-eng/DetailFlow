@@ -18,7 +18,7 @@ import { useMemo, useState, type ComponentType } from 'react';
 import { SiteShell } from '@/components/layout/site-shell';
 import { useBooking } from '@/components/providers/booking-provider';
 import type { CustomerBookingForm, VehicleProfile } from '@/lib/booking-types';
-import { getSetmoreUrl, submitBookingIntake } from '@/lib/api-client';
+import { getCalendarBookingUrl, submitBookingIntake } from '@/lib/api-client';
 import { getAddonServices, getPackageServices } from '@/lib/services-catalog';
 import { getVehicleDisplayName } from '@/lib/vehicle-utils';
 
@@ -34,7 +34,25 @@ interface VehicleSizeOption {
   hint: string;
 }
 
+interface BookingFieldErrors {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  zipCode?: string;
+  year?: string;
+  make?: string;
+  model?: string;
+  color?: string;
+  package?: string;
+  serviceSelection?: string;
+  selectedVehicleDetails?: string;
+  confirmationChannel?: string;
+  smsConsent?: string;
+  acceptedConsent?: string;
+}
+
 const MAX_VEHICLES = 4;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const INITIAL_FORM: CustomerBookingForm = {
   fullName: '',
@@ -82,16 +100,117 @@ function hasValidConfirmationPreference(form: CustomerBookingForm): boolean {
 /**
  * Validates required step-one booking fields.
  */
-function isStepOneValid(form: CustomerBookingForm, hasPackage: boolean): boolean {
-  return (
-    hasPackage &&
-    form.fullName.trim().length >= 2 &&
-    form.email.includes('@') &&
-    form.phone.trim().length >= 10 &&
-    form.zipCode.trim().length >= 5 &&
-    hasValidConfirmationPreference(form) &&
-    form.acceptedConsent
+function hasFirstAndLastName(fullName: string): boolean {
+  return fullName.trim().split(/\s+/).filter(Boolean).length >= 2;
+}
+
+/**
+ * Validates step-one fields and returns per-field helper errors.
+ */
+function validateStepOne(form: CustomerBookingForm, activeVehicle: VehicleProfile | undefined, hasPackage: boolean): BookingFieldErrors {
+  const errors: BookingFieldErrors = {};
+
+  if (!hasPackage) {
+    errors.package = 'Select a package to continue.';
+  }
+
+  if (!hasFirstAndLastName(form.fullName)) {
+    errors.fullName = 'Enter first and last name.';
+  }
+
+  if (!EMAIL_PATTERN.test(form.email.trim())) {
+    errors.email = 'Enter a valid email like name@provider.com.';
+  }
+
+  const phoneDigits = form.phone.replace(/\D/g, '');
+  if (phoneDigits.length < 10) {
+    errors.phone = 'Enter a valid phone number.';
+  }
+
+  if (form.zipCode.trim().length < 5) {
+    errors.zipCode = 'Enter a valid ZIP code.';
+  }
+
+  if (!hasValidConfirmationPreference(form)) {
+    errors.confirmationChannel = 'Select at least one confirmation channel.';
+  }
+
+  if (form.sendSmsConfirmation && !form.acceptedSmsConsent) {
+    errors.smsConsent = 'SMS confirmation requires consent.';
+  }
+
+  if (!form.acceptedConsent) {
+    errors.acceptedConsent = 'You must accept booking consent to continue.';
+  }
+
+  if (!activeVehicle?.year.trim()) {
+    errors.year = 'Year is required.';
+  }
+
+  if (!activeVehicle?.make.trim()) {
+    errors.make = 'Make is required.';
+  }
+
+  if (!activeVehicle?.model.trim()) {
+    errors.model = 'Model is required.';
+  }
+
+  if (!activeVehicle?.color.trim()) {
+    errors.color = 'Color is required.';
+  }
+
+  return errors;
+}
+
+/**
+ * Validates final booking submission requirements.
+ */
+function validateSubmission(form: CustomerBookingForm, vehicles: VehicleProfile[]): BookingFieldErrors {
+  const errors: BookingFieldErrors = {};
+  const selectedVehicles = vehicles.filter((vehicle) => vehicle.serviceIds.length > 0);
+
+  if (!hasFirstAndLastName(form.fullName)) {
+    errors.fullName = 'Enter first and last name.';
+  }
+
+  if (!EMAIL_PATTERN.test(form.email.trim())) {
+    errors.email = 'Enter a valid email like name@provider.com.';
+  }
+
+  const phoneDigits = form.phone.replace(/\D/g, '');
+  if (phoneDigits.length < 10) {
+    errors.phone = 'Enter a valid phone number.';
+  }
+
+  if (form.zipCode.trim().length < 5) {
+    errors.zipCode = 'Enter a valid ZIP code.';
+  }
+
+  if (!hasValidConfirmationPreference(form)) {
+    errors.confirmationChannel = 'Select at least one confirmation channel.';
+  }
+
+  if (form.sendSmsConfirmation && !form.acceptedSmsConsent) {
+    errors.smsConsent = 'SMS confirmation requires consent.';
+  }
+
+  if (!form.acceptedConsent) {
+    errors.acceptedConsent = 'You must accept booking consent before submitting.';
+  }
+
+  if (selectedVehicles.length === 0) {
+    errors.serviceSelection = 'Select at least one service before submitting.';
+  }
+
+  const missingVehicleDetails = selectedVehicles.find(
+    (vehicle) => !vehicle.year.trim() || !vehicle.make.trim() || !vehicle.model.trim() || !vehicle.color.trim(),
   );
+
+  if (missingVehicleDetails) {
+    errors.selectedVehicleDetails = `Complete year, make, model, and color for ${getVehicleDisplayName(missingVehicleDetails)}.`;
+  }
+
+  return errors;
 }
 
 /**
@@ -125,11 +244,13 @@ export default function BookingPage(): JSX.Element {
     getVehicleServices,
     getVehicleTotal,
     getGrandTotal,
-    clearAll,
   } = useBooking();
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<CustomerBookingForm>(INITIAL_FORM);
+  const [honeypot, setHoneypot] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<BookingFieldErrors>({});
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
@@ -152,13 +273,18 @@ export default function BookingPage(): JSX.Element {
     () => vehicles.filter((vehicle) => getVehicleServices(vehicle.id).length > 0),
     [getVehicleServices, vehicles],
   );
-  const hasAnyService = vehicles.some((vehicle) => vehicle.serviceIds.length > 0);
-  const stepOneValid = isStepOneValid(form, Boolean(selectedPackageId));
+  const stepOneErrors = useMemo(
+    () => validateStepOne(form, activeVehicle, Boolean(selectedPackageId)),
+    [activeVehicle, form, selectedPackageId],
+  );
+  const stepOneValid = Object.keys(stepOneErrors).length === 0;
 
   /**
    * Updates one customer form field while preserving other keys.
    */
   function updateCustomerField<K extends keyof CustomerBookingForm>(key: K, value: CustomerBookingForm[K]): void {
+    setFieldErrors({});
+    setBookingConfirmed(false);
     setForm((current) => ({ ...current, [key]: value }));
   }
 
@@ -170,6 +296,8 @@ export default function BookingPage(): JSX.Element {
       return;
     }
 
+    setFieldErrors({});
+    setBookingConfirmed(false);
     updateVehicle(activeVehicle.id, { [field]: value });
   }
 
@@ -182,6 +310,8 @@ export default function BookingPage(): JSX.Element {
       return;
     }
 
+    setFieldErrors({});
+    setBookingConfirmed(false);
     addVehicle();
     setStatusMessage('');
   }
@@ -190,6 +320,8 @@ export default function BookingPage(): JSX.Element {
    * Removes one vehicle from the booking dock.
    */
   function handleRemoveVehicle(vehicleId: string): void {
+    setFieldErrors({});
+    setBookingConfirmed(false);
     removeVehicle(vehicleId);
     setStatusMessage('');
   }
@@ -199,10 +331,12 @@ export default function BookingPage(): JSX.Element {
    */
   function goNext(): void {
     if (step === 1 && !stepOneValid) {
+      setFieldErrors(stepOneErrors);
       setStatusMessage('Complete required details, select one package, and confirm email/SMS preferences to continue.');
       return;
     }
 
+    setFieldErrors({});
     setStatusMessage('');
     setStep((current) => Math.min(current + 1, steps.length));
   }
@@ -211,6 +345,7 @@ export default function BookingPage(): JSX.Element {
    * Moves back to the previous booking step.
    */
   function goBack(): void {
+    setFieldErrors({});
     setStatusMessage('');
     setStep((current) => Math.max(current - 1, 1));
   }
@@ -219,21 +354,24 @@ export default function BookingPage(): JSX.Element {
    * Submits booking intake and redirects customer to Setmore.
    */
   async function handleSubmitBooking(): Promise<void> {
-    if (!stepOneValid || !hasAnyService) {
-      setStatusMessage('Please complete details, confirmation preferences, and service selections before submitting.');
+    const submissionErrors = validateSubmission(form, vehicles);
+    if (Object.keys(submissionErrors).length > 0) {
+      setFieldErrors(submissionErrors);
+      setStatusMessage('Please complete required booking details before submitting.');
       return;
     }
 
+    setFieldErrors({});
+    setBookingConfirmed(false);
     setSubmitting(true);
     setStatusMessage('Submitting your booking intake...');
 
     try {
-      await submitBookingIntake({ customer: form, vehicles });
-      setStatusMessage('Intake saved. Redirecting to Setmore...');
-      clearAll();
-      window.location.href = getSetmoreUrl();
-    } catch {
-      setStatusMessage('Submission failed. Please try again.');
+      const response = await submitBookingIntake({ customer: form, vehicles, honeypot });
+      setBookingConfirmed(true);
+      setStatusMessage(response.message ?? 'Booking confirmed. Continue to Cal.com to select your appointment time.');
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'Submission failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -353,7 +491,11 @@ export default function BookingPage(): JSX.Element {
                     <button
                       key={service.id}
                       type="button"
-                      onClick={() => setVehiclePackage(activeVehicleId, service.id)}
+                      onClick={() => {
+                        setFieldErrors({});
+                        setBookingConfirmed(false);
+                        setVehiclePackage(activeVehicleId, service.id);
+                      }}
                       className={`rounded-xl border p-4 text-left transition-all duration-300 hover:-translate-y-0.5 ${
                         selected
                           ? 'border-deepRed bg-deepRed/10 shadow-md'
@@ -367,6 +509,7 @@ export default function BookingPage(): JSX.Element {
                   );
                 })}
               </div>
+              {fieldErrors.package ? <p className="text-xs font-medium text-deepRed">{fieldErrors.package}</p> : null}
 
               <div>
                 <h3 className="text-sm font-semibold text-brandBlack/80">Vehicle Size</h3>
@@ -377,7 +520,15 @@ export default function BookingPage(): JSX.Element {
                       <button
                         key={size.id}
                         type="button"
-                        onClick={() => activeVehicle && updateVehicle(activeVehicle.id, { size: size.id })}
+                        onClick={() => {
+                          if (!activeVehicle) {
+                            return;
+                          }
+
+                          setFieldErrors({});
+                          setBookingConfirmed(false);
+                          updateVehicle(activeVehicle.id, { size: size.id });
+                        }}
                         className={`rounded-xl border px-4 py-3 text-left transition-all duration-300 ${
                           selected
                             ? 'border-deepRed bg-deepRed/10'
@@ -398,9 +549,12 @@ export default function BookingPage(): JSX.Element {
                   <input
                     value={form.fullName}
                     onChange={(event) => updateCustomerField('fullName', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
+                    className={`mt-1 w-full rounded-lg border px-3 py-2 transition duration-300 focus:outline-none ${
+                      fieldErrors.fullName ? 'border-deepRed focus:border-deepRed' : 'border-black/15 focus:border-waterBlue'
+                    }`}
                     placeholder="John Doe"
                   />
+                  {fieldErrors.fullName ? <span className="mt-1 block text-xs font-medium text-deepRed">{fieldErrors.fullName}</span> : null}
                 </label>
                 <label className="text-sm font-semibold text-brandBlack/75">
                   Email *
@@ -408,27 +562,36 @@ export default function BookingPage(): JSX.Element {
                     type="email"
                     value={form.email}
                     onChange={(event) => updateCustomerField('email', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
+                    className={`mt-1 w-full rounded-lg border px-3 py-2 transition duration-300 focus:outline-none ${
+                      fieldErrors.email ? 'border-deepRed focus:border-deepRed' : 'border-black/15 focus:border-waterBlue'
+                    }`}
                     placeholder="john@example.com"
                   />
+                  {fieldErrors.email ? <span className="mt-1 block text-xs font-medium text-deepRed">{fieldErrors.email}</span> : null}
                 </label>
                 <label className="text-sm font-semibold text-brandBlack/75">
                   Phone *
                   <input
                     value={form.phone}
                     onChange={(event) => updateCustomerField('phone', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
+                    className={`mt-1 w-full rounded-lg border px-3 py-2 transition duration-300 focus:outline-none ${
+                      fieldErrors.phone ? 'border-deepRed focus:border-deepRed' : 'border-black/15 focus:border-waterBlue'
+                    }`}
                     placeholder="(555) 123-4567"
                   />
+                  {fieldErrors.phone ? <span className="mt-1 block text-xs font-medium text-deepRed">{fieldErrors.phone}</span> : null}
                 </label>
                 <label className="text-sm font-semibold text-brandBlack/75">
                   ZIP Code *
                   <input
                     value={form.zipCode}
                     onChange={(event) => updateCustomerField('zipCode', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
+                    className={`mt-1 w-full rounded-lg border px-3 py-2 transition duration-300 focus:outline-none ${
+                      fieldErrors.zipCode ? 'border-deepRed focus:border-deepRed' : 'border-black/15 focus:border-waterBlue'
+                    }`}
                     placeholder="90210"
                   />
+                  {fieldErrors.zipCode ? <span className="mt-1 block text-xs font-medium text-deepRed">{fieldErrors.zipCode}</span> : null}
                 </label>
               </div>
 
@@ -438,36 +601,48 @@ export default function BookingPage(): JSX.Element {
                   <input
                     value={activeVehicle?.year ?? ''}
                     onChange={(event) => updateActiveVehicleField('year', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
+                    className={`mt-1 w-full rounded-lg border px-3 py-2 transition duration-300 focus:outline-none ${
+                      fieldErrors.year ? 'border-deepRed focus:border-deepRed' : 'border-black/15 focus:border-waterBlue'
+                    }`}
                     placeholder="2020"
                   />
+                  {fieldErrors.year ? <span className="mt-1 block text-xs font-medium text-deepRed">{fieldErrors.year}</span> : null}
                 </label>
                 <label className="text-sm font-semibold text-brandBlack/75">
                   Make
                   <input
                     value={activeVehicle?.make ?? ''}
                     onChange={(event) => updateActiveVehicleField('make', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
+                    className={`mt-1 w-full rounded-lg border px-3 py-2 transition duration-300 focus:outline-none ${
+                      fieldErrors.make ? 'border-deepRed focus:border-deepRed' : 'border-black/15 focus:border-waterBlue'
+                    }`}
                     placeholder="Toyota"
                   />
+                  {fieldErrors.make ? <span className="mt-1 block text-xs font-medium text-deepRed">{fieldErrors.make}</span> : null}
                 </label>
                 <label className="text-sm font-semibold text-brandBlack/75">
                   Model
                   <input
                     value={activeVehicle?.model ?? ''}
                     onChange={(event) => updateActiveVehicleField('model', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
+                    className={`mt-1 w-full rounded-lg border px-3 py-2 transition duration-300 focus:outline-none ${
+                      fieldErrors.model ? 'border-deepRed focus:border-deepRed' : 'border-black/15 focus:border-waterBlue'
+                    }`}
                     placeholder="Camry"
                   />
+                  {fieldErrors.model ? <span className="mt-1 block text-xs font-medium text-deepRed">{fieldErrors.model}</span> : null}
                 </label>
                 <label className="text-sm font-semibold text-brandBlack/75">
                   Color
                   <input
                     value={activeVehicle?.color ?? ''}
                     onChange={(event) => updateActiveVehicleField('color', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
+                    className={`mt-1 w-full rounded-lg border px-3 py-2 transition duration-300 focus:outline-none ${
+                      fieldErrors.color ? 'border-deepRed focus:border-deepRed' : 'border-black/15 focus:border-waterBlue'
+                    }`}
                     placeholder="Silver"
                   />
+                  {fieldErrors.color ? <span className="mt-1 block text-xs font-medium text-deepRed">{fieldErrors.color}</span> : null}
                 </label>
               </div>
 
@@ -510,7 +685,9 @@ export default function BookingPage(): JSX.Element {
                 </div>
 
                 {form.sendSmsConfirmation ? (
-                  <label className="mt-3 flex items-start gap-2 rounded-lg border border-deepRed/30 bg-deepRed/5 px-3 py-2 text-xs text-brandBlack/80">
+                  <label className={`mt-3 flex items-start gap-2 rounded-lg px-3 py-2 text-xs text-brandBlack/80 ${
+                    fieldErrors.smsConsent ? 'border border-deepRed bg-deepRed/10' : 'border border-deepRed/30 bg-deepRed/5'
+                  }`}>
                     <input
                       type="checkbox"
                       checked={form.acceptedSmsConsent}
@@ -520,9 +697,15 @@ export default function BookingPage(): JSX.Element {
                     I agree to receive booking-related SMS confirmations. Message/data rates may apply.
                   </label>
                 ) : null}
+                {fieldErrors.confirmationChannel ? (
+                  <p className="mt-2 text-xs font-medium text-deepRed">{fieldErrors.confirmationChannel}</p>
+                ) : null}
+                {fieldErrors.smsConsent ? <p className="mt-2 text-xs font-medium text-deepRed">{fieldErrors.smsConsent}</p> : null}
               </section>
 
-              <label className="flex items-start gap-2 rounded-xl border border-waterBlue/35 bg-waterBlue/10 px-4 py-3 text-sm text-brandBlack/80">
+              <label className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-sm text-brandBlack/80 ${
+                fieldErrors.acceptedConsent ? 'border-deepRed bg-deepRed/10' : 'border-waterBlue/35 bg-waterBlue/10'
+              }`}>
                 <input
                   type="checkbox"
                   checked={form.acceptedConsent}
@@ -531,6 +714,7 @@ export default function BookingPage(): JSX.Element {
                 />
                 I agree to booking terms and consent to contact for scheduling updates.
               </label>
+              {fieldErrors.acceptedConsent ? <p className="text-xs font-medium text-deepRed">{fieldErrors.acceptedConsent}</p> : null}
             </section>
           ) : null}
 
@@ -549,7 +733,11 @@ export default function BookingPage(): JSX.Element {
                     <button
                       key={service.id}
                       type="button"
-                      onClick={() => toggleServiceForVehicle(activeVehicleId, service)}
+                      onClick={() => {
+                        setFieldErrors({});
+                        setBookingConfirmed(false);
+                        toggleServiceForVehicle(activeVehicleId, service);
+                      }}
                       className={`rounded-xl border p-4 text-left transition-all duration-300 hover:-translate-y-0.5 ${
                         selected
                           ? 'border-deepRed bg-deepRed/10 shadow-md'
@@ -584,22 +772,28 @@ export default function BookingPage(): JSX.Element {
             <section className="space-y-4 rounded-2xl border border-black/10 p-4 transition-all duration-300">
               <div>
                 <h2 className="font-heading text-2xl font-semibold text-brandBlack">Schedule</h2>
-                <p className="mt-1 text-sm text-brandBlack/65">Submit your details, then choose your appointment on Setmore.</p>
+                <p className="mt-1 text-sm text-brandBlack/65">Submit your details, then choose your appointment on Cal.com.</p>
               </div>
 
               <div className="rounded-xl border border-black/10 bg-neutralGray p-4">
                 <p className="text-sm text-brandBlack/75">
-                  We pre-save your intake first so your booking request stays attached to your service selections.
+                  We pre-save your intake first so your booking request stays attached to your service selections before calendar scheduling.
                 </p>
                 <a
-                  href={getSetmoreUrl()}
+                  href={getCalendarBookingUrl()}
                   target="_blank"
                   rel="noreferrer"
                   className="mt-3 inline-flex items-center gap-2 rounded-full bg-deepRed px-4 py-2 text-sm font-semibold text-white transition duration-300 hover:bg-brandBlack"
                 >
-                  Open Setmore Calendar <ArrowRight className="h-4 w-4" />
+                  Open Cal.com <ArrowRight className="h-4 w-4" />
                 </a>
               </div>
+
+              {bookingConfirmed ? (
+                <div className="inline-flex w-full items-center gap-2 rounded-xl border border-green-300 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+                  <CheckCircle2 className="h-5 w-5" /> Booking confirmed. Your intake was saved successfully.
+                </div>
+              ) : null}
 
               <ul className="space-y-2 text-sm text-brandBlack/75">
                 <li className="inline-flex items-center gap-2"><Clock3 className="h-4 w-4 text-waterBlue" /> Instant confirmation after slot selection.</li>
@@ -631,16 +825,33 @@ export default function BookingPage(): JSX.Element {
               <button
                 type="button"
                 onClick={() => void handleSubmitBooking()}
-                disabled={submitting}
+                disabled={submitting || bookingConfirmed}
                 className="inline-flex items-center gap-2 rounded-full bg-deepRed px-5 py-2 text-sm font-semibold text-white transition duration-300 hover:bg-brandBlack disabled:opacity-65"
               >
-                {submitting ? 'Submitting...' : 'Submit and Continue'}
+                {bookingConfirmed ? 'Booking Confirmed' : submitting ? 'Submitting...' : 'Submit and Confirm'}
               </button>
             )}
           </div>
 
+          <div className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+            <label htmlFor="website">
+              Website
+              <input
+                id="website"
+                name="website"
+                autoComplete="off"
+                tabIndex={-1}
+                value={honeypot}
+                onChange={(event) => setHoneypot(event.target.value)}
+              />
+            </label>
+          </div>
+
+          {fieldErrors.serviceSelection ? <p className="text-xs font-medium text-deepRed">{fieldErrors.serviceSelection}</p> : null}
+          {fieldErrors.selectedVehicleDetails ? <p className="text-xs font-medium text-deepRed">{fieldErrors.selectedVehicleDetails}</p> : null}
+
           {statusMessage ? (
-            <p className={`text-sm ${statusMessage.toLowerCase().includes('failed') ? 'text-deepRed' : 'text-brandBlack/70'}`}>
+            <p className={`text-sm ${statusMessage.toLowerCase().includes('failed') || statusMessage.toLowerCase().includes('required') ? 'text-deepRed' : 'text-brandBlack/70'}`}>
               {statusMessage}
             </p>
           ) : null}

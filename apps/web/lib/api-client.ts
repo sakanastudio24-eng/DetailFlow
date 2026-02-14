@@ -23,12 +23,50 @@ export function getSetmoreUrl(): string {
 }
 
 /**
+ * Returns preferred calendar URL, prioritizing Cal.com.
+ */
+export function getCalendarBookingUrl(): string {
+  return process.env.NEXT_PUBLIC_CAL_COM_URL ?? getSetmoreUrl();
+}
+
+/**
+ * Parses API error payloads into human-readable messages.
+ */
+async function getApiErrorMessage(response: Response, fallbackMessage: string): Promise<string> {
+  try {
+    const payload = (await response.json()) as { detail?: unknown; message?: string };
+    if (typeof payload.message === 'string' && payload.message.trim()) {
+      return payload.message;
+    }
+
+    if (typeof payload.detail === 'string' && payload.detail.trim()) {
+      return payload.detail;
+    }
+
+    if (Array.isArray(payload.detail)) {
+      const message = payload.detail
+        .map((entry) => (typeof entry === 'object' && entry && 'msg' in entry ? String(entry.msg) : ''))
+        .filter(Boolean)
+        .join(' ');
+      if (message) {
+        return message;
+      }
+    }
+  } catch {
+    return fallbackMessage;
+  }
+
+  return fallbackMessage;
+}
+
+/**
  * Submits booking intake data to the backend.
  */
 export async function submitBookingIntake(payload: {
   customer: CustomerBookingForm;
   vehicles: VehicleProfile[];
-}): Promise<void> {
+  honeypot?: string;
+}): Promise<{ status: string; message?: string }> {
   const vehicles: BookingVehicleRequest[] = payload.vehicles.map((vehicle) => ({
     id: vehicle.id,
     label: vehicle.label,
@@ -42,9 +80,10 @@ export async function submitBookingIntake(payload: {
   const requestPayload: BookingIntakeRequest = {
     customer: payload.customer,
     vehicles,
+    honeypot: payload.honeypot ?? '',
   };
 
-  const response = await fetch(`${getApiBaseUrl()}/booking-intakes`, {
+  const response = await fetch(`${getApiBaseUrl()}/cal-bookings`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -53,8 +92,10 @@ export async function submitBookingIntake(payload: {
   });
 
   if (!response.ok) {
-    throw new Error('Booking intake submission failed.');
+    throw new Error(await getApiErrorMessage(response, 'Booking intake submission failed.'));
   }
+
+  return (await response.json()) as { status: string; message?: string };
 }
 
 /**
@@ -70,6 +111,6 @@ export async function submitContactMessage(payload: ContactForm): Promise<void> 
   });
 
   if (!response.ok) {
-    throw new Error('Contact message submission failed.');
+    throw new Error(await getApiErrorMessage(response, 'Contact message submission failed.'));
   }
 }

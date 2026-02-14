@@ -45,6 +45,7 @@ export interface BookingVehicleRequest {
 export interface BookingIntakeRequest {
   customer: CustomerBookingForm;
   vehicles: BookingVehicleRequest[];
+  honeypot: string;
 }
 
 export interface ContactForm {
