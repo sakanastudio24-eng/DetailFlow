@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from html import escape
 import json
 import os
 from typing import Any
@@ -115,60 +116,155 @@ def _build_template_variables(booking_record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _parse_submitted_timestamp(submitted_at: str) -> datetime:
+    """Parses booking timestamps and returns a timezone-aware datetime."""
+    try:
+        normalized = submitted_at.replace("Z", "+00:00")
+        parsed = datetime.fromisoformat(normalized)
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+
+        return parsed
+    except ValueError:
+        return datetime.now(timezone.utc)
+
+
+def _format_booking_date_label(submitted_at: str) -> str:
+    """Formats a submitted timestamp into a month/day owner subject label."""
+    submitted_dt = _parse_submitted_timestamp(submitted_at)
+    return f"{submitted_dt.strftime('%B')} {submitted_dt.day}"
+
+
+def _format_booking_datetime_label(submitted_at: str) -> str:
+    """Formats a submitted timestamp with explicit timezone context."""
+    submitted_dt = _parse_submitted_timestamp(submitted_at)
+    timezone_label = submitted_dt.tzname() or "UTC"
+    return f"{submitted_dt.strftime('%B')} {submitted_dt.day}, {submitted_dt.year} at {submitted_dt.strftime('%I:%M %p')} ({timezone_label})"
+
+
+def _build_owner_manage_link(booking_id: str) -> str:
+    """Builds an optional owner-manage URL from environment config."""
+    base_url = os.getenv("OWNER_BOOKING_MANAGE_URL", "").strip()
+    if not base_url:
+        return ""
+
+    if "{booking_id}" in base_url:
+        return base_url.replace("{booking_id}", booking_id)
+
+    separator = "&" if "?" in base_url else "?"
+    return f"{base_url}{separator}bookingId={booking_id}"
+
+
 def _build_owner_fallback_content(template_variables: dict[str, Any]) -> dict[str, str]:
     """Builds fallback HTML/text content for owner booking notifications."""
     booking = template_variables["booking"]
     customer = template_variables["customer"]
     vehicles = template_variables["vehicles"]
-    estimate = template_variables["estimate"]
+    booking_id = str(booking["bookingId"])
+    submitted_at = str(booking["submittedAt"])
+    submitted_datetime = _format_booking_datetime_label(submitted_at)
+    submitted_date = _format_booking_date_label(submitted_at)
+    manage_link = _build_owner_manage_link(booking_id)
+    notes = customer["notes"] or "None"
+
+    services_flat: list[dict[str, Any]] = []
+    receipt_rows: list[str] = []
+    for vehicle in vehicles:
+        vehicle_name = f"{vehicle['year']} {vehicle['make']} {vehicle['model']} ({vehicle['color']})".strip()
+        for service in vehicle["services"]:
+            services_flat.append(service)
+            receipt_rows.append(
+                "<tr>"
+                f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;'>{escape(vehicle['label'])} - {escape(vehicle_name)} - {escape(service['name'])}</td>"
+                f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;text-align:right;'>${int(service['price'])}</td>"
+                "</tr>"
+            )
+
+    primary_service = next(
+        (service["name"] for service in services_flat if str(service["id"]).startswith("pkg-")),
+        services_flat[0]["name"] if services_flat else "Detail",
+    )
+    service_summary = ", ".join([str(service["name"]) for service in services_flat]) if services_flat else "No services selected"
+
+    if not receipt_rows:
+        receipt_rows.append(
+            "<tr><td style='padding:8px;color:#10150f;font-size:13px;' colspan='2'>No services selected.</td></tr>"
+        )
 
     lines = [
-        f"Booking ID: {booking['bookingId']}",
-        f"Submitted: {booking['submittedAt']}",
-        f"Customer: {customer['fullName']}",
-        f"Email: {customer['email']}",
-        f"Phone: {customer['phone']}",
-        f"ZIP: {customer['zipCode']}",
+        f"New Booking Confirmed — {primary_service} — {submitted_date}",
         "",
-        "Vehicles:",
+        f"Customer name: {customer['fullName']}",
+        f"Phone: {customer['phone']}",
+        f"Email: {customer['email']}",
+        f"Service: {service_summary}",
+        f"Date/time (timezone): {submitted_datetime}",
+        f"Notes: {notes}",
+        f"Booking ID: {booking_id}",
+        f"Manage link: {manage_link or 'Not available'}",
+        "",
+        "This owner notification is sent after booking confirmation.",
     ]
 
-    html_rows: list[str] = []
-    for vehicle in vehicles:
-        services = ", ".join([f"{service['name']} (${service['price']})" for service in vehicle["services"]])
-        services_text = services if services else "No services selected"
-        lines.append(
-            f"- {vehicle['label']} ({vehicle['year']} {vehicle['make']} {vehicle['model']} {vehicle['color']}): "
-            f"{services_text} | Subtotal ${vehicle['estimatedSubtotal']}"
-        )
-        html_rows.append(
-            "<li>"
-            f"<strong>{vehicle['label']}</strong> "
-            f"({vehicle['year']} {vehicle['make']} {vehicle['model']} {vehicle['color']})"
-            f"<br/>Services: {services_text}"
-            f"<br/>Subtotal: ${vehicle['estimatedSubtotal']}"
-            "</li>"
-        )
-
-    lines.append("")
-    lines.append(f"Estimated total: ${estimate['grandTotal']}")
-    lines.append(f"Notes: {customer['notes'] or 'None'}")
+    manage_link_html = (
+        "<p style='margin:12px 0 0 0;font-size:13px;'>"
+        f"<a href='{escape(manage_link)}' style='color:#7f0912;font-weight:700;text-decoration:none;'>Manage Booking</a>"
+        "</p>"
+        if manage_link
+        else "<p style='margin:12px 0 0 0;font-size:13px;color:#6b7280;'>Manage link: Not available</p>"
+    )
 
     html = (
-        "<h2>New Booking Intake</h2>"
-        f"<p><strong>Booking ID:</strong> {booking['bookingId']}<br/>"
-        f"<strong>Submitted:</strong> {booking['submittedAt']}</p>"
-        f"<p><strong>Customer:</strong> {customer['fullName']}<br/>"
-        f"<strong>Email:</strong> {customer['email']}<br/>"
-        f"<strong>Phone:</strong> {customer['phone']}<br/>"
-        f"<strong>ZIP:</strong> {customer['zipCode']}</p>"
-        f"<p><strong>Estimated total:</strong> ${estimate['grandTotal']}</p>"
-        f"<p><strong>Notes:</strong> {customer['notes'] or 'None'}</p>"
-        f"<ul>{''.join(html_rows)}</ul>"
+        "<div style='margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#10150f;'>"
+        "<div style='max-width:700px;margin:0 auto;padding:24px 16px;'>"
+        "<div style='background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;'>"
+        "<div style='background:#10150f;padding:16px 20px;'>"
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>"
+        "<tr>"
+        "<td style='color:#ffffff;font-size:22px;font-weight:700;'>Cruzn <span style='color:#8cc0d6;'>Clean</span></td>"
+        "<td style='text-align:right;font-size:12px;'>"
+        "<span style='color:#e5e7eb;text-decoration:none;margin-left:12px;'>Owner Alert</span>"
+        "</td>"
+        "</tr>"
+        "</table>"
+        "</div>"
+        "<div style='padding:20px;'>"
+        f"<p style='margin:0;font-size:23px;font-weight:800;color:#7f0912;'>New Booking Confirmed — {escape(primary_service)} — {escape(submitted_date)}</p>"
+        "<p style='margin:8px 0 0 0;font-size:13px;color:#374151;'>This owner notification is sent after booking confirmation.</p>"
+        "<div style='margin-top:16px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;'>"
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>"
+        "<tr><td style='padding:8px;background:#f9fafb;font-weight:700;font-size:13px;'>Customer name</td>"
+        f"<td style='padding:8px;background:#f9fafb;font-size:13px;text-align:right;'>{escape(customer['fullName'])}</td></tr>"
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Phone</td>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>{escape(customer['phone'])}</td></tr>"
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Email</td>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>{escape(customer['email'])}</td></tr>"
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Service</td>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>{escape(service_summary)}</td></tr>"
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Date/time (timezone)</td>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>{escape(submitted_datetime)}</td></tr>"
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Notes</td>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>{escape(notes)}</td></tr>"
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Booking ID</td>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;color:#7f0912;font-weight:700;'>{escape(booking_id)}</td></tr>"
+        "</table>"
+        "</div>"
+        "<div style='margin-top:14px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;'>"
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>"
+        "<tr><td style='padding:10px;background:#111827;color:#ffffff;font-size:12px;font-weight:700;'>Service Line</td>"
+        "<td style='padding:10px;background:#111827;color:#ffffff;font-size:12px;font-weight:700;text-align:right;'>Cost</td></tr>"
+        f"{''.join(receipt_rows)}"
+        "</table>"
+        "</div>"
+        f"{manage_link_html}"
+        "</div>"
+        "</div>"
+        "</div>"
+        "</div>"
     )
 
     return {
-        "subject": f"New booking intake {booking['bookingId']}",
+        "subject": f"New Booking Confirmed — {primary_service} — {submitted_date}",
         "text": "\n".join(lines),
         "html": html,
     }
