@@ -180,52 +180,125 @@ def _build_customer_fallback_content(template_variables: dict[str, Any]) -> dict
     customer = template_variables["customer"]
     vehicles = template_variables["vehicles"]
     estimate = template_variables["estimate"]
+    site_url = os.getenv("PUBLIC_SITE_URL", "https://www.cruznclean.com").rstrip("/")
+    terms_link = f"{site_url}/terms"
+    readiness_link = f"{site_url}/faq"
+    support_email = os.getenv("EMAIL_REPLY_TO", os.getenv("EMAIL_FROM", "support@cruznclean.com")).strip()
+    support_phone = "(555) 123-4567"
+    address_value = customer.get("address") or customer.get("zipCode") or "Address to be confirmed"
+
+    service_charge_total = 0
+    other_services_total = 0
+    other_services: list[str] = []
+    receipt_rows: list[str] = []
+
+    for vehicle in vehicles:
+        vehicle_name = f"{vehicle['year']} {vehicle['make']} {vehicle['model']} ({vehicle['color']})".strip()
+        for service in vehicle["services"]:
+            price = int(service["price"])
+            receipt_rows.append(
+                "<tr>"
+                f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;'>{vehicle['label']} - {vehicle_name} - {service['name']}</td>"
+                f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;text-align:right;'>${price}</td>"
+                "</tr>"
+            )
+            if str(service["id"]).startswith("pkg-"):
+                service_charge_total += price
+            else:
+                other_services_total += price
+                other_services.append(service["name"])
+
+    if not receipt_rows:
+        receipt_rows.append(
+            "<tr><td style='padding:8px;color:#10150f;font-size:13px;' colspan='2'>No services selected.</td></tr>"
+        )
+
+    other_services_text = ", ".join(other_services) if other_services else "None"
+    total_amount = int(estimate["grandTotal"])
+    deposit_due = round(total_amount * 0.5, 2)
 
     lines = [
-        f"Hi {customer['fullName']},",
+        "Cruzn Clean order comfermation",
         "",
-        "Thanks for submitting your booking details. We received your intake and will review it shortly.",
-        f"Booking ID: {booking['bookingId']}",
-        f"Submitted: {booking['submittedAt']}",
+        f"Order number: {booking['bookingId']}",
+        f"Order name: {customer['fullName']}",
         "",
-        "Vehicle Summary:",
+        "THANK YOU ✓",
+        "Your receipt:",
+        f"Name: {customer['fullName']}",
+        f"Address: {address_value}",
+        f"Number: {customer['phone']}",
+        f"Service charge cost: ${service_charge_total}",
+        f"Other services: {other_services_text} (${other_services_total})",
+        f"Total amount due: ${total_amount}",
+        f"Payment info: 50% deposit on sight (${deposit_due}) and 50% on completion (${deposit_due})",
+        f"Terms and service readiness: {terms_link} | {readiness_link}",
+        f"For inquiries call/email: {support_phone} | {support_email}",
     ]
 
-    html_rows: list[str] = []
-    for vehicle in vehicles:
-        services = ", ".join([f"{service['name']} (${service['price']})" for service in vehicle["services"]])
-        services_text = services if services else "No services selected"
-        lines.append(
-            f"- {vehicle['label']} ({vehicle['year']} {vehicle['make']} {vehicle['model']} {vehicle['color']}): "
-            f"{services_text} | Subtotal ${vehicle['estimatedSubtotal']}"
-        )
-        html_rows.append(
-            "<li>"
-            f"<strong>{vehicle['label']}</strong> "
-            f"({vehicle['year']} {vehicle['make']} {vehicle['model']} {vehicle['color']})"
-            f"<br/>Services: {services_text}"
-            f"<br/>Subtotal: ${vehicle['estimatedSubtotal']}"
-            "</li>"
-        )
-
-    lines.append("")
-    lines.append(f"Estimated total: ${estimate['grandTotal']}")
-    lines.append("Next step: complete your appointment time in Setmore.")
-
     html = (
-        f"<p>Hi {customer['fullName']},</p>"
-        "<p>Thanks for submitting your booking details. "
-        "We received your intake and will review it shortly.</p>"
-        f"<p><strong>Booking ID:</strong> {booking['bookingId']}<br/>"
-        f"<strong>Submitted:</strong> {booking['submittedAt']}</p>"
-        f"<p><strong>Estimated total:</strong> ${estimate['grandTotal']}</p>"
-        "<p><strong>Vehicle Summary</strong></p>"
-        f"<ul>{''.join(html_rows)}</ul>"
-        "<p>Next step: complete your appointment time in Setmore.</p>"
+        "<div style='margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#10150f;'>"
+        "<div style='max-width:700px;margin:0 auto;padding:24px 16px;'>"
+        "<div style='background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;'>"
+        "<div style='background:#10150f;padding:16px 20px;'>"
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>"
+        "<tr>"
+        "<td style='color:#ffffff;font-size:22px;font-weight:700;'>Cruzn <span style='color:#8cc0d6;'>Clean</span></td>"
+        "<td style='text-align:right;font-size:12px;'>"
+        f"<a href='{site_url}' style='color:#e5e7eb;text-decoration:none;margin-left:12px;'>Home</a>"
+        f"<a href='{site_url}/services' style='color:#e5e7eb;text-decoration:none;margin-left:12px;'>Services</a>"
+        f"<a href='{site_url}/booking' style='color:#e5e7eb;text-decoration:none;margin-left:12px;'>Book</a>"
+        "</td>"
+        "</tr>"
+        "</table>"
+        "</div>"
+        "<div style='padding:20px;'>"
+        "<p style='margin:0;font-size:12px;color:#6b7280;'>Order Number</p>"
+        f"<p style='margin:4px 0 0 0;font-size:16px;font-weight:700;color:#7f0912;'>{booking['bookingId']}</p>"
+        f"<p style='margin:4px 0 0 0;font-size:13px;color:#374151;'>Order Name: {customer['fullName']}</p>"
+        "<div style='margin-top:18px;padding:14px;border:1px solid #bbf7d0;background:#f0fdf4;border-radius:10px;'>"
+        "<p style='margin:0;font-size:28px;font-weight:800;color:#166534;'>THANK YOU ✓</p>"
+        "<p style='margin:6px 0 0 0;font-size:13px;color:#166534;'>Your booking intake has been confirmed.</p>"
+        "</div>"
+        "<h2 style='margin:18px 0 8px 0;font-size:18px;color:#10150f;'>Receipt</h2>"
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>"
+        "<tr><td style='padding:8px;background:#f9fafb;font-weight:700;font-size:13px;'>Name</td>"
+        f"<td style='padding:8px;background:#f9fafb;font-size:13px;text-align:right;'>{customer['fullName']}</td></tr>"
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Address</td>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>{address_value}</td></tr>"
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Number</td>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>{customer['phone']}</td></tr>"
+        "</table>"
+        "<div style='margin-top:14px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;'>"
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>"
+        "<tr><td style='padding:10px;background:#111827;color:#ffffff;font-size:12px;font-weight:700;'>Service</td>"
+        "<td style='padding:10px;background:#111827;color:#ffffff;font-size:12px;font-weight:700;text-align:right;'>Cost</td></tr>"
+        f"{''.join(receipt_rows)}"
+        "<tr><td style='padding:8px;background:#f9fafb;font-size:13px;font-weight:700;'>Service charge cost</td>"
+        f"<td style='padding:8px;background:#f9fafb;font-size:13px;text-align:right;'>${service_charge_total}</td></tr>"
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;font-weight:700;'>Other services</td>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>${other_services_total}</td></tr>"
+        "<tr><td style='padding:10px;background:#7f0912;color:#ffffff;font-size:14px;font-weight:800;'>Total amount due</td>"
+        f"<td style='padding:10px;background:#7f0912;color:#ffffff;font-size:14px;font-weight:800;text-align:right;'>${total_amount}</td></tr>"
+        "</table>"
+        "</div>"
+        "<div style='margin-top:14px;padding:12px;border:1px solid #fecaca;background:#fff1f2;border-radius:10px;'>"
+        "<p style='margin:0;font-size:13px;font-weight:700;color:#7f0912;'>Payment info</p>"
+        f"<p style='margin:6px 0 0 0;font-size:13px;color:#7f0912;'>Payment will be concluded by a 50%deposite on sight (${deposit_due}) and 50% deposite on compleation (${deposit_due}).</p>"
+        "</div>"
+        "<p style='margin:14px 0 0 0;font-size:13px;'>"
+        f"<a href='{terms_link}' style='color:#7f0912;font-weight:700;text-decoration:none;'>Terms & Conditions</a> | "
+        f"<a href='{readiness_link}' style='color:#7f0912;font-weight:700;text-decoration:none;'>Service Readiness</a>"
+        "</p>"
+        f"<p style='margin:10px 0 0 0;font-size:13px;color:#374151;'>For any inquiries call/email: {support_phone} | {support_email}</p>"
+        "</div>"
+        "</div>"
+        "</div>"
+        "</div>"
     )
 
     return {
-        "subject": f"Booking received: {booking['bookingId']}",
+        "subject": "Cruzn Clean order comfermation",
         "text": "\n".join(lines),
         "html": html,
     }
