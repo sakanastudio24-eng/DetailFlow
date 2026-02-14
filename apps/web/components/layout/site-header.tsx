@@ -7,6 +7,7 @@ import {
   FileText,
   Home,
   Image,
+  Mail,
   Phone,
   ShoppingCart,
   Sparkles,
@@ -34,6 +35,7 @@ function getNavLinks(): NavLinkItem[] {
     { href: '/', label: 'Home' },
     { href: '/services', label: 'Services' },
     { href: '/gallery', label: 'Gallery' },
+    { href: '/email-preview', label: 'Email' },
     { href: '/quote', label: 'Quote' },
   ];
 }
@@ -46,6 +48,7 @@ function getMobileNavLinks(): MobileNavItem[] {
     { href: '/', label: 'Home', icon: Home },
     { href: '/services', label: 'Services', icon: Sparkles },
     { href: '/gallery', label: 'Gallery', icon: Image },
+    { href: '/email-preview', label: 'Email', icon: Mail },
     { href: '/quote', label: 'Quote', icon: FileText },
     { href: '/booking', label: 'Book', icon: CalendarDays },
   ];
@@ -278,7 +281,7 @@ export function SiteHeader(): JSX.Element {
       </header>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-black/10 bg-white/95 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-2 backdrop-blur-md lg:hidden">
-        <div className="mx-auto grid w-full max-w-[760px] grid-cols-5 gap-1 px-2 sm:px-4">
+        <div className="mx-auto grid w-full max-w-[760px] grid-cols-6 gap-1 px-2 sm:px-4">
           {mobileLinks.map((link) => {
             const active = isActivePath(pathname, link.href);
             const Icon = link.icon;
