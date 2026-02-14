@@ -19,3 +19,8 @@
 - Tablet and desktop breakpoints layered on top
 - Mobile and tablet (`<=1023px`) use a fixed bottom navigation dock
 - Respect iOS/Android safe-area insets for bottom navigation and overlays
+- Breakpoints used:
+- `<=479px`: compact phone spacing and tighter navigation heights
+- `480px-767px`: standard phone layout
+- `768px-1023px`: tablet layout with bottom navigation
+- `>=1024px`: desktop header/nav layout

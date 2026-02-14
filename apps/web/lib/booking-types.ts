@@ -25,6 +25,9 @@ export interface CustomerBookingForm {
   email: string;
   phone: string;
   zipCode: string;
+  sendEmailConfirmation: boolean;
+  sendSmsConfirmation: boolean;
+  acceptedSmsConsent: boolean;
   notes: string;
   acceptedConsent: boolean;
 }

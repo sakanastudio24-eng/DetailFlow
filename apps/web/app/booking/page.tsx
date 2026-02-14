@@ -41,6 +41,9 @@ const INITIAL_FORM: CustomerBookingForm = {
   email: '',
   phone: '',
   zipCode: '',
+  sendEmailConfirmation: true,
+  sendSmsConfirmation: false,
+  acceptedSmsConsent: false,
   notes: '',
   acceptedConsent: false,
 };
@@ -68,6 +71,15 @@ function getVehicleSizes(): VehicleSizeOption[] {
 }
 
 /**
+ * Validates confirmation preference inputs for email and SMS updates.
+ */
+function hasValidConfirmationPreference(form: CustomerBookingForm): boolean {
+  const selectedAnyChannel = form.sendEmailConfirmation || form.sendSmsConfirmation;
+  const smsConsentSatisfied = !form.sendSmsConfirmation || form.acceptedSmsConsent;
+  return selectedAnyChannel && smsConsentSatisfied;
+}
+
+/**
  * Validates required step-one booking fields.
  */
 function isStepOneValid(form: CustomerBookingForm, hasPackage: boolean): boolean {
@@ -77,6 +89,7 @@ function isStepOneValid(form: CustomerBookingForm, hasPackage: boolean): boolean
     form.email.includes('@') &&
     form.phone.trim().length >= 10 &&
     form.zipCode.trim().length >= 5 &&
+    hasValidConfirmationPreference(form) &&
     form.acceptedConsent
   );
 }
@@ -186,7 +199,7 @@ export default function BookingPage(): JSX.Element {
    */
   function goNext(): void {
     if (step === 1 && !stepOneValid) {
-      setStatusMessage('Complete required details and select one package to continue.');
+      setStatusMessage('Complete required details, select one package, and confirm email/SMS preferences to continue.');
       return;
     }
 
@@ -207,7 +220,7 @@ export default function BookingPage(): JSX.Element {
    */
   async function handleSubmitBooking(): Promise<void> {
     if (!stepOneValid || !hasAnyService) {
-      setStatusMessage('Please complete details and select services before submitting.');
+      setStatusMessage('Please complete details, confirmation preferences, and service selections before submitting.');
       return;
     }
 
@@ -228,10 +241,10 @@ export default function BookingPage(): JSX.Element {
 
   return (
     <SiteShell>
-      <section className="relative overflow-hidden bg-brandBlack px-4 py-12 text-white sm:px-6 sm:py-14">
+      <section className="relative overflow-hidden bg-brandBlack px-4 py-10 text-white sm:px-6 sm:py-12 md:py-14">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#8cc0d636,transparent_65%)]" />
-        <div className="relative mx-auto max-w-6xl rounded-[30px] border border-white/15 bg-white/10 px-5 py-7 backdrop-blur-md sm:px-10 sm:py-9">
-          <h1 className="text-center font-heading text-3xl font-semibold sm:text-5xl">Book Your Appointment</h1>
+        <div className="relative mx-auto max-w-6xl rounded-[28px] border border-white/15 bg-white/10 px-4 py-6 backdrop-blur-md sm:rounded-[30px] sm:px-8 sm:py-8 md:px-10 md:py-9">
+          <h1 className="text-center font-heading text-2xl font-semibold sm:text-4xl md:text-5xl">Book Your Appointment</h1>
           <p className="mt-2 text-center text-sm text-white/75 sm:text-base">Three simple steps to a pristine vehicle.</p>
 
           <div className="mx-auto mt-6 max-w-4xl">
@@ -269,7 +282,7 @@ export default function BookingPage(): JSX.Element {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px]">
+      <section className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_380px]">
         <div className="space-y-5 rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
           <div className="rounded-2xl border border-black/10 bg-neutralGray/60 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -333,7 +346,7 @@ export default function BookingPage(): JSX.Element {
                 <p className="mt-1 text-sm text-brandBlack/65">Pick one package, set vehicle size, and complete contact info.</p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {packageServices.map((service) => {
                   const selected = selectedPackageId === service.id;
                   return (
@@ -357,7 +370,7 @@ export default function BookingPage(): JSX.Element {
 
               <div>
                 <h3 className="text-sm font-semibold text-brandBlack/80">Vehicle Size</h3>
-                <div className="mt-2 grid gap-3 sm:grid-cols-3">
+                <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {sizes.map((size) => {
                     const selected = activeVehicle?.size === size.id;
                     return (
@@ -419,7 +432,7 @@ export default function BookingPage(): JSX.Element {
                 </label>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="text-sm font-semibold text-brandBlack/75">
                   Year
                   <input
@@ -457,6 +470,57 @@ export default function BookingPage(): JSX.Element {
                   />
                 </label>
               </div>
+
+              <section className="rounded-xl border border-black/10 bg-neutralGray/65 p-3 sm:p-4">
+                <h3 className="text-sm font-semibold text-brandBlack">Confirmation Preferences</h3>
+                <p className="mt-1 text-xs text-brandBlack/70">
+                  Choose how you want appointment confirmations and status updates.
+                </p>
+
+                <div className="mt-3 space-y-2">
+                  <label className="flex items-start gap-2 rounded-lg border border-waterBlue/30 bg-white px-3 py-2 text-sm text-brandBlack/80">
+                    <input
+                      type="checkbox"
+                      checked={form.sendEmailConfirmation}
+                      onChange={(event) => updateCustomerField('sendEmailConfirmation', event.target.checked)}
+                      className="mt-1"
+                    />
+                    <span>
+                      Email confirmations to <span className="font-semibold text-brandBlack">your email address</span>
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-2 rounded-lg border border-waterBlue/30 bg-white px-3 py-2 text-sm text-brandBlack/80">
+                    <input
+                      type="checkbox"
+                      checked={form.sendSmsConfirmation}
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        updateCustomerField('sendSmsConfirmation', checked);
+                        if (!checked) {
+                          updateCustomerField('acceptedSmsConsent', false);
+                        }
+                      }}
+                      className="mt-1"
+                    />
+                    <span>
+                      SMS confirmations to <span className="font-semibold text-brandBlack">your phone number</span>
+                    </span>
+                  </label>
+                </div>
+
+                {form.sendSmsConfirmation ? (
+                  <label className="mt-3 flex items-start gap-2 rounded-lg border border-deepRed/30 bg-deepRed/5 px-3 py-2 text-xs text-brandBlack/80">
+                    <input
+                      type="checkbox"
+                      checked={form.acceptedSmsConsent}
+                      onChange={(event) => updateCustomerField('acceptedSmsConsent', event.target.checked)}
+                      className="mt-0.5"
+                    />
+                    I agree to receive booking-related SMS confirmations. Message/data rates may apply.
+                  </label>
+                ) : null}
+              </section>
 
               <label className="flex items-start gap-2 rounded-xl border border-waterBlue/35 bg-waterBlue/10 px-4 py-3 text-sm text-brandBlack/80">
                 <input
@@ -582,7 +646,7 @@ export default function BookingPage(): JSX.Element {
           ) : null}
         </div>
 
-        <aside className="sticky top-28 h-fit rounded-2xl border border-black/10 bg-white shadow-sm">
+        <aside className="h-fit rounded-2xl border border-black/10 bg-white shadow-sm lg:sticky lg:top-28">
           <div className="rounded-t-2xl bg-gradient-to-r from-brandBlack to-[#1a1514] px-4 py-3 text-white">
             <h2 className="inline-flex items-center gap-2 font-heading text-xl font-semibold">
               <ShieldCheck className="h-5 w-5 text-waterBlue" /> Your Selection

@@ -39,11 +39,6 @@ a {
 }
 
 @media (max-width: 1023px) {
-  :root {
-    --site-header-height: 84px;
-    --mobile-nav-height: 90px;
-  }
-
   body {
     padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
   }
@@ -62,7 +57,23 @@ a {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 479px) {
+  :root {
+    --site-header-height: 76px;
+    --mobile-nav-height: 82px;
+  }
+
+  .dock-shell {
+    max-height: 68vh;
+    overflow-y: auto;
+  }
+
+  .services-bottom-safe {
+    padding-bottom: 13rem;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 767px) {
   :root {
     --site-header-height: 80px;
     --mobile-nav-height: 86px;
@@ -75,6 +86,17 @@ a {
 
   .services-bottom-safe {
     padding-bottom: 14rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root {
+    --site-header-height: 84px;
+    --mobile-nav-height: 92px;
+  }
+
+  .services-bottom-safe {
+    padding-bottom: 15rem;
   }
 }
 
