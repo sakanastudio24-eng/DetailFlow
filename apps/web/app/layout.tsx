@@ -3,7 +3,7 @@ import { Providers } from '@/app/providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Cruz N Clean',
+  title: 'Cruzn Clean',
   description: 'Premium mobile detailing portfolio and booking experience.',
 };
 

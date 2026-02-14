@@ -6,18 +6,11 @@ import { SiteShell } from '@/components/layout/site-shell';
 
 type PreviewTab = 'customer' | 'owner';
 
-interface TemplateVariable {
-  key: string;
-  type: 'string' | 'number' | 'boolean';
-  fallback: string;
-}
-
 interface EmailPreviewConfig {
   title: string;
   subject: string;
   description: string;
   htmlPreview: string;
-  variables: TemplateVariable[];
 }
 
 /**
@@ -27,7 +20,7 @@ function getPreviewConfigs(): Record<PreviewTab, EmailPreviewConfig> {
   return {
     customer: {
       title: 'Customer Confirmation Preview',
-      subject: 'Cruzn Clean order comfermation',
+      subject: 'Cruzn Clean order confirmation',
       description: 'Sent when customer email confirmation preference is enabled.',
       htmlPreview:
         "<div style='margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#10150f;'>" +
@@ -66,23 +59,13 @@ function getPreviewConfigs(): Record<PreviewTab, EmailPreviewConfig> {
         '</table></div>' +
         "<div style='margin-top:14px;padding:12px;border:1px solid #fecaca;background:#fff1f2;border-radius:10px;'>" +
         "<p style='margin:0;font-size:13px;font-weight:700;color:#7f0912;'>Payment info</p>" +
-        "<p style='margin:6px 0 0 0;font-size:13px;color:#7f0912;'>Payment will be concluded by a 50%deposite on sight ($344.5) and 50% deposite on compleation ($344.5).</p>" +
+        "<p style='margin:6px 0 0 0;font-size:13px;color:#7f0912;'>Payment will be concluded by a 50% deposit on-site ($344.5) and 50% deposit on completion ($344.5).</p>" +
         '</div>' +
         "<p style='margin:14px 0 0 0;font-size:13px;'>" +
         "<a href='https://www.cruznclean.com/terms' style='color:#7f0912;font-weight:700;text-decoration:none;'>Terms & Conditions</a> | " +
-        "<a href='https://www.cruznclean.com/faq' style='color:#7f0912;font-weight:700;text-decoration:none;'>Service Readiness</a></p>" +
+        "<a href='https://www.cruznclean.com/faq#service-readiness' style='color:#7f0912;font-weight:700;text-decoration:none;'>Service Readiness</a></p>" +
         "<p style='margin:10px 0 0 0;font-size:13px;color:#374151;'>For any inquiries call/email: (555) 123-4567 | support@cruznclean.com</p>" +
         '</div></div></div></div>',
-      variables: [
-        { key: 'booking.bookingId', type: 'string', fallback: 'bk_xxxxxxxxxxxx' },
-        { key: 'booking.submittedAt', type: 'string', fallback: '2026-02-14T19:22:10Z' },
-        { key: 'customer.fullName', type: 'string', fallback: 'Jordan Cruz' },
-        { key: 'customer.email', type: 'string', fallback: 'jordan@example.com' },
-        { key: 'customer.phone', type: 'string', fallback: '(555) 123-4567' },
-        { key: 'customer.address', type: 'string', fallback: '123 Main St, Los Angeles, CA 90210' },
-        { key: 'vehicles', type: 'string', fallback: '[{...}]' },
-        { key: 'estimate.grandTotal', type: 'number', fallback: '689' },
-      ],
     },
     owner: {
       title: 'Owner Notification Preview',
@@ -118,14 +101,6 @@ function getPreviewConfigs(): Record<PreviewTab, EmailPreviewConfig> {
         '</table></div>' +
         "<p style='margin:12px 0 0 0;font-size:13px;'><a href='https://www.cruznclean.com/admin/bookings/bk_ab12cd34ef56' style='color:#7f0912;font-weight:700;text-decoration:none;'>Manage Booking</a></p>" +
         '</div></div></div></div>',
-      variables: [
-        { key: 'booking.bookingId', type: 'string', fallback: 'bk_xxxxxxxxxxxx' },
-        { key: 'customer.fullName', type: 'string', fallback: 'Jordan Cruz' },
-        { key: 'customer.phone', type: 'string', fallback: '(555) 123-4567' },
-        { key: 'customer.zipCode', type: 'string', fallback: '90210' },
-        { key: 'vehicles', type: 'string', fallback: '[{...}]' },
-        { key: 'estimate.grandTotal', type: 'number', fallback: '689' },
-      ],
     },
   };
 }
@@ -137,6 +112,14 @@ export default function EmailPreviewPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState<PreviewTab>('customer');
   const previews = useMemo(() => getPreviewConfigs(), []);
   const config = previews[activeTab];
+  const emailStack = [
+    { label: 'Frontend', value: 'Next.js booking flow submits to FastAPI.' },
+    { label: 'Intake API', value: 'POST /cal-bookings validates and stores bookings.' },
+    { label: 'Delivery', value: 'Resend handles outbound transactional email sends.' },
+    { label: 'Rendering', value: 'Inline HTML + text fallback is used (no template IDs required).' },
+    { label: 'Policy', value: 'Owner email always attempts; customer email sends only on opt-in.' },
+    { label: 'Observability', value: 'Failed sends are logged to data/email_failures.json.' },
+  ];
 
   return (
     <SiteShell>
@@ -176,7 +159,7 @@ export default function EmailPreviewPage(): JSX.Element {
           </button>
         </div>
 
-        <div className="mt-5 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="mt-5 grid items-stretch gap-6 lg:grid-cols-[1.15fr_0.85fr]">
           <article className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
             <h2 className="font-heading text-2xl font-semibold text-brandBlack">{config.title}</h2>
             <p className="mt-2 text-sm text-brandBlack/70">{config.description}</p>
@@ -193,18 +176,24 @@ export default function EmailPreviewPage(): JSX.Element {
             </div>
           </article>
 
-          <aside className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
-            <h3 className="font-heading text-xl font-semibold text-brandBlack">Variables Preview</h3>
-            <p className="mt-2 text-sm text-brandBlack/70">These are sample payload keys used by transactional email mapping.</p>
-            <ul className="mt-4 space-y-2">
-              {config.variables.map((variable) => (
-                <li key={variable.key} className="rounded-xl border border-black/10 p-3">
-                  <p className="text-sm font-semibold text-brandBlack">{variable.key}</p>
-                  <p className="mt-1 text-xs text-brandBlack/70">Type: {variable.type}</p>
-                  <p className="mt-1 text-xs text-brandBlack/60">Fallback: {variable.fallback}</p>
+          <aside className="flex h-full flex-col rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
+            <h3 className="font-heading text-xl font-semibold text-brandBlack">Email Stack</h3>
+            <p className="mt-2 text-sm text-brandBlack/70">
+              Current implementation stack for booking confirmations and owner notifications.
+            </p>
+            <ul className="mt-4 grid flex-1 auto-rows-fr gap-2">
+              {emailStack.map((item) => (
+                <li key={item.label} className="flex h-full flex-col rounded-xl border border-black/10 p-3">
+                  <p className="text-sm font-semibold text-brandBlack">{item.label}</p>
+                  <p className="mt-1 text-xs text-brandBlack/70">{item.value}</p>
                 </li>
               ))}
             </ul>
+            <div className="mt-4 rounded-xl border border-waterBlue/35 bg-waterBlue/10 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brandBlack/60">Current Mode</p>
+              <p className="mt-1 text-sm font-semibold text-brandBlack">Inline Styled Fallback Emails</p>
+              <p className="mt-1 text-xs text-brandBlack/70">Provider template IDs are optional and currently not required.</p>
+            </div>
           </aside>
         </div>
       </section>

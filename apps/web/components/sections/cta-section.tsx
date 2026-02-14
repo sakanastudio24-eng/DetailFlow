@@ -20,7 +20,7 @@ export function CtaSection(): JSX.Element {
               Ready to lock in your detail?
             </h2>
             <p className="mt-3 max-w-2xl text-sm text-white/85 sm:text-base">
-              Submit your vehicle and service details first, then finish appointment scheduling in Setmore with a clean handoff.
+              Submit your vehicle and service details first, then finish appointment scheduling in Cal.com with a clean handoff.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link

@@ -1,3 +1,5 @@
+import { getPackageServices } from '@/lib/services-catalog';
+
 export interface ServiceItem {
   title: string;
   description: string;
@@ -24,23 +26,17 @@ export interface TestimonialItem {
  * Returns core service cards for the homepage teaser.
  */
 export function getHomeServices(): ServiceItem[] {
-  return [
-    {
-      title: 'Basic Detail',
-      description: 'Exterior wash, vacuum, windows, and tire shine for weekly upkeep.',
-      priceFrom: '$99',
-    },
-    {
-      title: 'Standard Detail',
-      description: 'Inside-out refresh with deep interior clean, clay bar, and wax protection.',
-      priceFrom: '$189',
-    },
-    {
-      title: 'Premium Detail',
-      description: 'Showroom-level correction and long-lasting surface protection package.',
-      priceFrom: '$349',
-    },
-  ];
+  const descriptionById: Record<string, string> = {
+    'pkg-basic': 'Exterior wash, vacuum, windows, and tire shine for weekly upkeep.',
+    'pkg-standard': 'Inside-out refresh with deep interior clean, clay bar, and wax protection.',
+    'pkg-premium': 'Showroom-level correction and long-lasting surface protection package.',
+  };
+
+  return getPackageServices().map((service) => ({
+    title: service.name,
+    description: descriptionById[service.id] ?? service.description,
+    priceFrom: `$${service.price}`,
+  }));
 }
 
 /**
@@ -77,8 +73,8 @@ export function getHomeProcess(): ProcessItem[] {
       detail: 'Add contact, vehicle details, and service notes in the booking flow.',
     },
     {
-      title: 'Confirm on Setmore',
-      detail: 'Select your final appointment slot through Setmore after intake submission.',
+      title: 'Confirm on Cal.com',
+      detail: 'Select your final appointment slot through Cal.com after intake submission.',
     },
   ];
 }

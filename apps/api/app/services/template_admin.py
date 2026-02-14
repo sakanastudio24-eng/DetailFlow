@@ -9,8 +9,6 @@ import resend
 class TemplateAdminError(RuntimeError):
     """Represents a safe-to-return template-admin failure message."""
 
-
-
 def _sanitize_error_message(error: Exception) -> str:
     """Normalizes provider failures into short, non-sensitive messages."""
     message = " ".join(str(error).split())
@@ -19,8 +17,6 @@ def _sanitize_error_message(error: Exception) -> str:
 
     return message[:280]
 
-
-
 def _configure_resend() -> None:
     """Initializes the Resend SDK API key from environment configuration."""
     api_key = os.getenv("RESEND_API_KEY", "").strip()
@@ -28,8 +24,6 @@ def _configure_resend() -> None:
         raise TemplateAdminError("Template provider is not configured.")
 
     resend.api_key = api_key
-
-
 
 def _to_dict(value: Any) -> dict[str, Any]:
     """Converts SDK return payloads into serializable dictionaries."""
@@ -46,8 +40,6 @@ def _to_dict(value: Any) -> dict[str, Any]:
 
     return {"result": str(value)}
 
-
-
 def create_template(*, name: str, html: str, variables: list[dict[str, Any]]) -> dict[str, Any]:
     """Creates one provider-managed Resend template."""
     _configure_resend()
@@ -63,8 +55,6 @@ def create_template(*, name: str, html: str, variables: list[dict[str, Any]]) ->
     except Exception as exc:
         raise TemplateAdminError(_sanitize_error_message(exc)) from exc
 
-
-
 def get_template(template_id: str) -> dict[str, Any]:
     """Fetches one template by its provider identifier."""
     _configure_resend()
@@ -73,8 +63,6 @@ def get_template(template_id: str) -> dict[str, Any]:
         return _to_dict(response)
     except Exception as exc:
         raise TemplateAdminError(_sanitize_error_message(exc)) from exc
-
-
 
 def update_template(*, template_id: str, name: str | None = None, html: str | None = None) -> dict[str, Any]:
     """Updates template name and/or HTML content by identifier."""
@@ -93,8 +81,6 @@ def update_template(*, template_id: str, name: str | None = None, html: str | No
     except Exception as exc:
         raise TemplateAdminError(_sanitize_error_message(exc)) from exc
 
-
-
 def publish_template(template_id: str) -> dict[str, Any]:
     """Publishes one template revision by identifier."""
     _configure_resend()
@@ -103,8 +89,6 @@ def publish_template(template_id: str) -> dict[str, Any]:
         return _to_dict(response)
     except Exception as exc:
         raise TemplateAdminError(_sanitize_error_message(exc)) from exc
-
-
 
 def duplicate_template(template_id: str) -> dict[str, Any]:
     """Duplicates an existing template by identifier."""
@@ -115,8 +99,6 @@ def duplicate_template(template_id: str) -> dict[str, Any]:
     except Exception as exc:
         raise TemplateAdminError(_sanitize_error_message(exc)) from exc
 
-
-
 def delete_template(template_id: str) -> dict[str, Any]:
     """Deletes one template by identifier."""
     _configure_resend()
@@ -125,8 +107,6 @@ def delete_template(template_id: str) -> dict[str, Any]:
         return _to_dict(response)
     except Exception as exc:
         raise TemplateAdminError(_sanitize_error_message(exc)) from exc
-
-
 
 def list_templates(*, limit: int | None = None, after: str | None = None) -> dict[str, Any]:
     """Lists templates with optional pagination and page-size controls."""

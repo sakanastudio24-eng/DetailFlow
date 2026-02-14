@@ -5,6 +5,9 @@ import { useMemo, useState } from 'react';
 import { Car, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 
 import { useBooking } from '@/components/providers/booking-provider';
+import { BOOKING_LIMIT_DISCLAIMER, MAX_BOOKED_VEHICLES_PER_DAY } from '@/lib/booking-policy';
+import { VehicleSizeGuideLookup } from '@/components/vehicle/vehicle-size-guide-lookup';
+import type { VehicleSize } from '@/lib/booking-types';
 import { getVehicleDisplayName } from '@/lib/vehicle-utils';
 
 /**
@@ -28,6 +31,7 @@ export function VehicleDock(): JSX.Element {
     () => vehicles.find((vehicle) => vehicle.id === activeVehicleId) ?? vehicles[0],
     [activeVehicleId, vehicles],
   );
+  const canAddVehicle = vehicles.length < MAX_BOOKED_VEHICLES_PER_DAY;
 
   /**
    * Updates one active vehicle field in dock controls.
@@ -38,6 +42,32 @@ export function VehicleDock(): JSX.Element {
     }
 
     updateVehicle(activeVehicle.id, { [field]: value });
+  }
+
+  /**
+   * Applies one lookup result to the active vehicle record.
+   */
+  function applyLookupMatch(match: { make: string; model: string; size: VehicleSize }): void {
+    if (!activeVehicle) {
+      return;
+    }
+
+    updateVehicle(activeVehicle.id, {
+      make: match.make,
+      model: match.model,
+      size: match.size,
+    });
+  }
+
+  /**
+   * Applies manual size overrides for active vehicle pricing.
+   */
+  function applyManualSize(size: VehicleSize): void {
+    if (!activeVehicle) {
+      return;
+    }
+
+    updateVehicle(activeVehicle.id, { size });
   }
 
   return (
@@ -106,15 +136,25 @@ export function VehicleDock(): JSX.Element {
           <button
             type="button"
             onClick={addVehicle}
-            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-waterBlue px-3 py-2 text-sm font-semibold text-waterBlue transition hover:bg-waterBlue/10"
+            disabled={!canAddVehicle}
+            className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-waterBlue px-3 py-2 text-sm font-semibold text-waterBlue transition ${
+              canAddVehicle ? 'hover:bg-waterBlue/10' : 'cursor-not-allowed opacity-60'
+            }`}
           >
             <Plus className="h-4 w-4" /> Add Another Car
           </button>
+          <p className="mt-2 text-center text-xs font-medium text-brandBlack/60">{BOOKING_LIMIT_DISCLAIMER}</p>
         </section>
 
         {activeVehicle ? (
           <section className="rounded-xl border border-black/10 bg-neutralGray p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brandBlack/55">Active Vehicle Details</p>
+            <VehicleSizeGuideLookup
+              activeVehicle={activeVehicle}
+              onApplyLookupMatch={applyLookupMatch}
+              onManualSizeChange={applyManualSize}
+              className="mt-3"
+            />
             <div className="mt-3 grid grid-cols-2 gap-3">
               <label className="text-xs font-semibold text-brandBlack/70">
                 Make

@@ -46,6 +46,23 @@ Routes:
 5. Email send failures are logged to `data/email_failures.json`.
 6. Booking API stays non-blocking on email provider failures.
 
+## Vehicle Size + Pricing Rules
+- Built-in 50-vehicle lookup guide (dropdown quick pick + type finder).
+- Lookup can auto-fill `make`, `model`, and `size`; manual size override is always allowed.
+- Size multipliers:
+- `small = 1.00`
+- `medium = 1.15`
+- `large = 1.30`
+- Multipliers apply to packages and add-ons in Services, Booking, Dock, Cart, and backend email estimate totals.
+- `Standard Detail` is preselected for new vehicles and emphasized as the best-value package.
+
+## Booking Limit Policy
+- Daily cap: maximum `3` vehicles per customer per intake day.
+- Identity key: normalized email + phone digits.
+- Counting rule: only vehicles with at least one selected service count.
+- Frontend: hard blocks adding a 4th vehicle and shows booking disclaimer text.
+- Backend: enforces the same rule and returns `422` when exceeded.
+
 ## Environment Setup
 `.env` files are git-ignored. Keep secrets local/runtime only.
 
@@ -64,11 +81,11 @@ Optional:
 - `RESEND_TEMPLATE_OWNER_NOTIFICATION`
 - `OWNER_BOOKING_MANAGE_URL` (supports `{booking_id}` placeholder)
 - `PUBLIC_SITE_URL`
+- `BOOKING_LIMIT_TIMEZONE` (default `America/Los_Angeles`)
 
 ### Web `.env` keys
 - `NEXT_PUBLIC_API_BASE_URL` (default `http://127.0.0.1:8000`)
 - `NEXT_PUBLIC_CAL_COM_URL`
-- `NEXT_PUBLIC_SETMORE_URL` (legacy fallback)
 
 ## Local Development
 ### Web
@@ -92,9 +109,16 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - Keep template admin token private and rotate if exposed.
 - `/email-preview` is mock-only and does not use provider credentials.
 
+## Git Commit Notes
+- Commit by functional section (small, reviewable commits).
+- Use scoped commit messages like `feat(booking): ...` or `docs(api): ...`.
+- Reference `docs/git-commit-notes.md` for commit templates and suggested messages.
+
 ## Documentation Index
 - `docs/architecture.md`
 - `docs/booking-flow.md`
+- `docs/booking-edge-rules.md`
+- `docs/git-commit-notes.md`
 - `docs/routes.md`
 - `docs/email-confirmation-spec.md`
 - `docs/email-api-contract.md`
@@ -102,4 +126,5 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - `docs/email-ops-runbook.md`
 - `docs/email-rollout-plan.md`
 - `docs/email-testing-checklist.md`
+- `docs/test-implementation.md`
 - `docs/email-troubleshooting.md`

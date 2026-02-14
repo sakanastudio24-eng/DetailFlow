@@ -127,13 +127,13 @@ export function SiteHeader(): JSX.Element {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-black/10 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1360px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <Link href="/" className="font-heading text-2xl font-semibold tracking-tight text-brandBlack sm:text-3xl">
+        <div className="site-frame grid grid-cols-[auto_1fr_auto] items-center gap-4 py-3">
+          <Link href="/" className="brand-mark shrink-0 whitespace-nowrap text-brandBlack">
             <span>Cruzn</span>
             <span className="ml-1 text-brandBlack/65">Clean</span>
           </Link>
 
-          <nav className="hidden items-center gap-8 lg:flex">
+          <nav className="hidden min-w-0 items-center justify-center gap-8 xl:flex">
             {links.map((link) => {
               const active = isActivePath(pathname, link.href);
               return (
@@ -152,7 +152,7 @@ export function SiteHeader(): JSX.Element {
             })}
           </nav>
 
-          <div className="hidden items-center gap-3 lg:flex" ref={cartRef}>
+          <div className="hidden shrink-0 items-center justify-end gap-3 xl:flex" ref={cartRef}>
             <a href="tel:+15551234567" className="inline-flex items-center gap-2 text-sm font-semibold text-brandBlack transition hover:text-deepRed">
               <Phone className="h-4 w-4" />
               (555) 123-4567
@@ -238,7 +238,7 @@ export function SiteHeader(): JSX.Element {
             ) : null}
           </div>
 
-          <div className="flex items-center gap-1 lg:hidden" ref={cartRef}>
+          <div className="flex items-center justify-end gap-1 xl:hidden" ref={cartRef}>
             <a
               href="tel:+15551234567"
               className="inline-flex h-9 w-9 items-center justify-center rounded-full text-brandBlack transition duration-300 hover:bg-neutralGray"
@@ -280,7 +280,7 @@ export function SiteHeader(): JSX.Element {
         </div>
       </header>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-black/10 bg-white/95 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-2 backdrop-blur-md lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-black/10 bg-white/95 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-2 backdrop-blur-md xl:hidden">
         <div className="mx-auto grid w-full max-w-[760px] grid-cols-6 gap-1 px-2 sm:px-4">
           {mobileLinks.map((link) => {
             const active = isActivePath(pathname, link.href);
@@ -291,7 +291,7 @@ export function SiteHeader(): JSX.Element {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-semibold transition-all duration-300 ${
+                className={`mobile-bottom-nav-item flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-semibold transition-all duration-300 ${
                   bookingLink
                     ? active
                       ? 'bg-deepRed text-white shadow-md'

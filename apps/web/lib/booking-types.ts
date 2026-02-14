@@ -1,4 +1,5 @@
 export type ServiceCategory = 'package' | 'addon';
+export type VehicleSize = 'small' | 'medium' | 'large';
 
 export interface ServiceOption {
   id: string;
@@ -16,7 +17,7 @@ export interface VehicleProfile {
   model: string;
   year: string;
   color: string;
-  size: 'small' | 'medium' | 'large';
+  size: VehicleSize;
   serviceIds: string[];
 }
 
@@ -39,6 +40,7 @@ export interface BookingVehicleRequest {
   model: string;
   year: string;
   color: string;
+  size: VehicleSize;
   serviceIds: string[];
 }
 

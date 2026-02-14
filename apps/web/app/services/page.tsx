@@ -1,15 +1,17 @@
 'use client';
 
-import { Car, ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { VehicleDock } from '@/components/dock/vehicle-dock';
 import { SiteShell } from '@/components/layout/site-shell';
 import { useBooking } from '@/components/providers/booking-provider';
+import { VehicleSizeGuideLookup } from '@/components/vehicle/vehicle-size-guide-lookup';
+import type { VehicleSize } from '@/lib/booking-types';
+import { formatSizeAdjustmentLabel, getAdjustedServicePrice } from '@/lib/pricing';
 import { getAddonServices, getPackageServices } from '@/lib/services-catalog';
 
 interface VehicleSizeOption {
-  id: 'small' | 'medium' | 'large';
+  id: VehicleSize;
   label: string;
   hint: string;
 }
@@ -26,16 +28,27 @@ function getVehicleSizeOptions(): VehicleSizeOption[] {
 }
 
 /**
- * Renders package or add-on service cards for the active vehicle.
+ * Formats numeric totals into whole-dollar currency strings.
+ */
+function formatCurrency(value: number): string {
+  return `$${value.toFixed(0)}`;
+}
+
+/**
+ * Renders package or add-on cards with active-vehicle size-adjusted prices.
  */
 function ServiceGrid({ category }: { category: 'package' | 'addon' }): JSX.Element {
-  const { activeVehicleId, setVehiclePackage, toggleServiceForVehicle, getVehicleServices } = useBooking();
+  const { vehicles, activeVehicleId, setVehiclePackage, toggleServiceForVehicle, getVehicleServices } = useBooking();
+  const activeVehicle = vehicles.find((vehicle) => vehicle.id === activeVehicleId);
   const services = useMemo(
     () => (category === 'package' ? getPackageServices() : getAddonServices()),
     [category],
   );
 
   const selectedIds = getVehicleServices(activeVehicleId).map((service) => service.id);
+
+  const basicPackage = useMemo(() => services.find((service) => service.id === 'pkg-basic'), [services]);
+  const standardPackage = useMemo(() => services.find((service) => service.id === 'pkg-standard'), [services]);
 
   /**
    * Handles selection logic for package and add-on cards.
@@ -57,14 +70,33 @@ function ServiceGrid({ category }: { category: 'package' | 'addon' }): JSX.Eleme
   return (
     <section className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm transition duration-300 hover:shadow-md">
       <div className="mb-4 flex items-end justify-between gap-3">
-        <h2 className="font-heading text-2xl font-semibold text-brandBlack">
-          {category === 'package' ? 'Detail Packages' : 'Enhancement Add-Ons'}
-        </h2>
+        <div>
+          <h2 className="font-heading text-2xl font-semibold text-brandBlack">
+            {category === 'package' ? 'Detail Packages' : 'Enhancement Add-Ons'}
+          </h2>
+          {activeVehicle ? (
+            <p className="mt-1 text-xs font-semibold text-brandBlack/60">
+              Active size: {activeVehicle.size.toUpperCase()} • {formatSizeAdjustmentLabel(activeVehicle.size)}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         {services.map((service) => {
           const selected = selectedIds.includes(service.id);
+          const adjustedPrice = activeVehicle ? getAdjustedServicePrice(service.price, activeVehicle.size) : service.price;
+          const isStandardPackage = category === 'package' && service.id === 'pkg-standard';
+          const basicPrice = activeVehicle && basicPackage ? getAdjustedServicePrice(basicPackage.price, activeVehicle.size) : basicPackage?.price;
+          const standardPrice = activeVehicle && standardPackage ? getAdjustedServicePrice(standardPackage.price, activeVehicle.size) : standardPackage?.price;
+          const premiumVsStandard =
+            isStandardPackage || !standardPrice
+              ? null
+              : adjustedPrice - standardPrice;
+          const standardVsBasic =
+            isStandardPackage && basicPrice !== undefined
+              ? adjustedPrice - basicPrice
+              : null;
 
           return (
             <button
@@ -74,15 +106,33 @@ function ServiceGrid({ category }: { category: 'package' | 'addon' }): JSX.Eleme
               className={`rounded-xl border p-4 text-left transition duration-300 ${
                 selected
                   ? 'border-deepRed bg-deepRed/10 shadow-md'
-                  : 'border-black/10 bg-white hover:-translate-y-0.5 hover:border-waterBlue hover:bg-waterBlue/10'
+                  : isStandardPackage
+                    ? 'border-deepRed/45 bg-[#fff7f8] hover:-translate-y-0.5 hover:border-deepRed hover:bg-deepRed/10'
+                    : 'border-black/10 bg-white hover:-translate-y-0.5 hover:border-waterBlue hover:bg-waterBlue/10'
               }`}
             >
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brandBlack/55">{service.duration}</p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brandBlack/55">{service.duration}</p>
+                {isStandardPackage ? (
+                  <span className="rounded-full bg-deepRed px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-white">
+                    Best Value
+                  </span>
+                ) : null}
+              </div>
               <h3 className="mt-1 font-heading text-xl font-bold text-brandBlack">{service.name}</h3>
               <p className="mt-2 text-sm text-brandBlack/70">{service.description}</p>
+              {isStandardPackage && standardVsBasic !== null ? (
+                <p className="mt-2 text-xs font-semibold text-deepRed">Only +{formatCurrency(standardVsBasic)} vs Basic at this size.</p>
+              ) : null}
+              {!isStandardPackage && premiumVsStandard !== null && premiumVsStandard > 0 && category === 'package' ? (
+                <p className="mt-2 text-xs text-brandBlack/65">{formatCurrency(premiumVsStandard)} above Standard at this size.</p>
+              ) : null}
+              {!isStandardPackage && category === 'package' && service.id === 'pkg-basic' && standardPrice && adjustedPrice < standardPrice ? (
+                <p className="mt-2 text-xs text-brandBlack/65">Standard adds deeper coverage for +{formatCurrency(standardPrice - adjustedPrice)}.</p>
+              ) : null}
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-[0.15em] text-brandBlack/55">Tap to select</span>
-                <span className="font-heading text-2xl font-extrabold text-deepRed">${service.price}</span>
+                <span className="font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(adjustedPrice)}</span>
               </div>
             </button>
           );
@@ -93,12 +143,11 @@ function ServiceGrid({ category }: { category: 'package' | 'addon' }): JSX.Eleme
 }
 
 /**
- * Renders the size selector block for the active vehicle.
+ * Renders size cards and lookup tools for the active vehicle.
  */
 function VehicleSizeSection(): JSX.Element {
   const { vehicles, activeVehicleId, updateVehicle } = useBooking();
   const activeVehicle = vehicles.find((vehicle) => vehicle.id === activeVehicleId);
-  const [guideOpen, setGuideOpen] = useState(false);
   const options = getVehicleSizeOptions();
 
   if (!activeVehicle) {
@@ -108,7 +157,7 @@ function VehicleSizeSection(): JSX.Element {
   return (
     <section className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm transition duration-300 hover:shadow-md">
       <h2 className="font-heading text-2xl font-semibold text-brandBlack">Select Your Vehicle Size</h2>
-      <p className="mt-2 text-sm text-brandBlack/60">Watch prices update automatically below.</p>
+      <p className="mt-2 text-sm text-brandBlack/60">Size updates reprice packages and add-ons instantly.</p>
 
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         {options.map((option) => {
@@ -131,33 +180,18 @@ function VehicleSizeSection(): JSX.Element {
         })}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setGuideOpen((current) => !current)}
-        className="mt-4 flex w-full items-center justify-between rounded-xl border border-black/10 bg-neutralGray px-4 py-3 text-left"
-      >
-        <span className="inline-flex items-center gap-2 text-sm font-semibold text-brandBlack">
-          <Car className="h-4 w-4 text-waterBlue" /> Vehicle Size Guide - Find Your Vehicle
-        </span>
-        <ChevronDown className={`h-4 w-4 text-brandBlack/60 transition ${guideOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {guideOpen ? (
-        <div className="mt-3 grid gap-3 rounded-xl border border-black/10 bg-white p-4 sm:grid-cols-3">
-          <div>
-            <p className="text-sm font-semibold text-deepRed">Small</p>
-            <p className="mt-1 text-xs text-brandBlack/70">Civic, Corolla, Mazda3, A4</p>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-deepRed">Medium</p>
-            <p className="mt-1 text-xs text-brandBlack/70">CR-V, RAV4, CX-5, Model Y</p>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-deepRed">Large</p>
-            <p className="mt-1 text-xs text-brandBlack/70">F-150, Silverado, Yukon, Suburban</p>
-          </div>
-        </div>
-      ) : null}
+      <VehicleSizeGuideLookup
+        activeVehicle={activeVehicle}
+        onApplyLookupMatch={(match) => {
+          updateVehicle(activeVehicle.id, {
+            make: match.make,
+            model: match.model,
+            size: match.size,
+          });
+        }}
+        onManualSizeChange={(size) => updateVehicle(activeVehicle.id, { size })}
+        className="mt-4"
+      />
     </section>
   );
 }
@@ -175,6 +209,7 @@ export default function ServicesPage(): JSX.Element {
           <p className="mx-auto mt-4 max-w-3xl text-base text-white/75 sm:text-xl">
             Choose the perfect service for your vehicle size and condition.
           </p>
+          <p className="mt-3 text-sm font-semibold text-waterBlue">Standard Detail is the most balanced package for most vehicles.</p>
         </div>
       </section>
 

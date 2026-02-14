@@ -7,10 +7,13 @@ import { CarRunnerMiniGame } from '@/components/layout/car-runner-mini-game';
  */
 export function SiteFooter(): JSX.Element {
   return (
-    <footer className="border-t border-white/10 bg-gradient-to-br from-brandBlack via-[#131a15] to-[#0e1511] text-white">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[1.2fr_1fr_1fr]">
+    <footer className="mobile-footer-fullscreen border-t border-white/10 bg-gradient-to-br from-brandBlack via-[#131a15] to-[#0e1511] text-white">
+      <div className="site-frame grid gap-8 py-12 md:grid-cols-[1.2fr_1fr_1fr]">
         <div>
-          <h2 className="font-heading text-2xl font-semibold text-white">Cruz N Clean</h2>
+          <h2 className="brand-mark text-white">
+            <span>Cruzn</span>
+            <span className="ml-1 text-white/75">Clean</span>
+          </h2>
           <p className="mt-3 max-w-sm text-sm text-white/70">
             Premium mobile detailing for daily drivers, enthusiast builds, and multi-vehicle households.
           </p>
@@ -46,14 +49,17 @@ export function SiteFooter(): JSX.Element {
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl px-4 pb-10 sm:px-6">
+      <div className="site-frame pb-10">
         <CarRunnerMiniGame />
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-4 text-xs text-white/60 sm:px-6 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Cruz N Clean. All rights reserved.</p>
-          <p>Built with a documentation-first workflow.</p>
+        <div className="site-frame flex flex-col gap-2 py-4 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} Cruzn Clean. All rights reserved.</p>
+          <p>
+            Built with a documentation-first workflow.
+            <span className="ml-2 text-white/70">All site photos are open-source demo images (Pexels/Unsplash).</span>
+          </p>
         </div>
       </div>
     </footer>

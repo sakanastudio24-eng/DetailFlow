@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, EmailStr, field_validator, model_validator
+
+from app.services.booking_policy import MAX_BOOKED_VEHICLES_PER_DAY
+from app.services.service_catalog import ALLOWED_SERVICE_IDS
 
 
 class CustomerBooking(BaseModel):
@@ -63,6 +68,7 @@ class VehicleSelection(BaseModel):
     model: str
     year: str
     color: str
+    size: Literal["small", "medium", "large"]
     serviceIds: list[str]
 
     @field_validator("year", "make", "model", "color")
@@ -83,6 +89,10 @@ class VehicleSelection(BaseModel):
         if not cleaned:
             raise ValueError("Select at least one service for each vehicle.")
 
+        unknown_services = [service_id for service_id in cleaned if service_id not in ALLOWED_SERVICE_IDS]
+        if unknown_services:
+            raise ValueError(f"Invalid service selection: {unknown_services[0]}.")
+
         return cleaned
 
 
@@ -96,5 +106,13 @@ class BookingIntakeRequest(BaseModel):
         """Ensures at least one vehicle payload is provided."""
         if not self.vehicles:
             raise ValueError("At least one vehicle is required.")
+
+        selected_vehicle_count = sum(1 for vehicle in self.vehicles if vehicle.serviceIds)
+        if selected_vehicle_count > MAX_BOOKED_VEHICLES_PER_DAY:
+            raise ValueError("Daily vehicle limit exceeded. Maximum 3 vehicles per customer per day.")
+
+        vehicle_ids = [vehicle.id.strip() for vehicle in self.vehicles]
+        if len(vehicle_ids) != len(set(vehicle_ids)):
+            raise ValueError("Each vehicle entry must use a unique ID.")
 
         return self

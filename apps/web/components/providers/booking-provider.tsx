@@ -2,7 +2,9 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-import type { ServiceOption, VehicleProfile } from '@/lib/booking-types';
+import { MAX_BOOKED_VEHICLES_PER_DAY } from '@/lib/booking-policy';
+import type { ServiceOption, VehicleProfile, VehicleSize } from '@/lib/booking-types';
+import { getAdjustedServicePrice } from '@/lib/pricing';
 import { findServiceById } from '@/lib/services-catalog';
 
 interface BookingContextValue {
@@ -41,8 +43,18 @@ function createDefaultVehicle(index: number): VehicleProfile {
     year: '',
     color: '',
     size: 'small',
-    serviceIds: [],
+    serviceIds: ['pkg-standard'],
   };
+}
+
+/**
+ * Ensures each vehicle keeps exactly one package selected by default.
+ */
+function ensureVehicleHasPackage(serviceIds: string[]): string[] {
+  const cleaned = serviceIds.filter(Boolean);
+  const selectedPackage = cleaned.find((serviceId) => serviceId.startsWith('pkg-'));
+  const retainedAddons = cleaned.filter((serviceId) => !serviceId.startsWith('pkg-'));
+  return [selectedPackage ?? 'pkg-standard', ...retainedAddons];
 }
 
 /**
@@ -66,10 +78,14 @@ export function BookingProvider({ children }: BookingProviderProps): JSX.Element
         const normalizedVehicles = parsed.vehicles.map((vehicle, index) => ({
           ...createDefaultVehicle(index),
           ...vehicle,
-          size: vehicle.size ?? 'small',
-        }));
+          size: (vehicle.size ?? 'small') as VehicleSize,
+          serviceIds: ensureVehicleHasPackage(Array.isArray(vehicle.serviceIds) ? vehicle.serviceIds : []),
+        })).slice(0, MAX_BOOKED_VEHICLES_PER_DAY);
+        const resolvedActiveVehicleId = normalizedVehicles.some((vehicle) => vehicle.id === parsed.activeVehicleId)
+          ? parsed.activeVehicleId
+          : normalizedVehicles[0].id;
         setVehicles(normalizedVehicles);
-        setActiveVehicleId(parsed.activeVehicleId ?? normalizedVehicles[0].id);
+        setActiveVehicleId(resolvedActiveVehicleId);
       }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -85,6 +101,10 @@ export function BookingProvider({ children }: BookingProviderProps): JSX.Element
    */
   function addVehicle(): void {
     setVehicles((current) => {
+      if (current.length >= MAX_BOOKED_VEHICLES_PER_DAY) {
+        return current;
+      }
+
       const nextVehicle = createDefaultVehicle(current.length);
       setActiveVehicleId(nextVehicle.id);
       return [...current, nextVehicle];
@@ -177,7 +197,11 @@ export function BookingProvider({ children }: BookingProviderProps): JSX.Element
 
     return vehicle.serviceIds
       .map((serviceId) => findServiceById(serviceId))
-      .filter((service): service is ServiceOption => Boolean(service));
+      .filter((service): service is ServiceOption => Boolean(service))
+      .map((service) => ({
+        ...service,
+        price: getAdjustedServicePrice(service.price, vehicle.size),
+      }));
   }
 
   /**

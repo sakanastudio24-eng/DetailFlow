@@ -12,10 +12,10 @@ export function ServicesSection(): JSX.Element {
     <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <div className="fade-in-up mb-8 flex items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-deepRed">Detail Packages</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-waterBlue">Detail Packages</p>
           <h2 className="mt-2 font-heading text-3xl font-semibold text-brandBlack sm:text-4xl">Choose your service level</h2>
         </div>
-        <Link href="/services" className="text-sm font-semibold text-deepRed transition duration-300 hover:text-brandBlack">
+        <Link href="/services" className="text-sm font-semibold text-waterBlue transition duration-300 hover:text-brandBlack">
           Full service menu
         </Link>
       </div>

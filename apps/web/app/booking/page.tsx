@@ -17,8 +17,11 @@ import { useMemo, useState, type ComponentType } from 'react';
 
 import { SiteShell } from '@/components/layout/site-shell';
 import { useBooking } from '@/components/providers/booking-provider';
-import type { CustomerBookingForm, VehicleProfile } from '@/lib/booking-types';
+import { VehicleSizeGuideLookup } from '@/components/vehicle/vehicle-size-guide-lookup';
+import { BOOKING_LIMIT_DISCLAIMER, MAX_BOOKED_VEHICLES_PER_DAY, countSelectedVehicles } from '@/lib/booking-policy';
+import type { CustomerBookingForm, VehicleProfile, VehicleSize } from '@/lib/booking-types';
 import { getCalendarBookingUrl, submitBookingIntake } from '@/lib/api-client';
+import { formatSizeAdjustmentLabel, getAdjustedServicePrice } from '@/lib/pricing';
 import { getAddonServices, getPackageServices } from '@/lib/services-catalog';
 import { getVehicleDisplayName } from '@/lib/vehicle-utils';
 
@@ -29,7 +32,7 @@ interface StepItem {
 }
 
 interface VehicleSizeOption {
-  id: 'small' | 'medium' | 'large';
+  id: VehicleSize;
   label: string;
   hint: string;
 }
@@ -46,12 +49,12 @@ interface BookingFieldErrors {
   package?: string;
   serviceSelection?: string;
   selectedVehicleDetails?: string;
+  selectedVehicleLimit?: string;
   confirmationChannel?: string;
   smsConsent?: string;
   acceptedConsent?: string;
 }
 
-const MAX_VEHICLES = 4;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const INITIAL_FORM: CustomerBookingForm = {
@@ -105,15 +108,13 @@ function hasFirstAndLastName(fullName: string): boolean {
 }
 
 /**
- * Validates step-one fields and returns per-field helper errors.
+ * Appends shared customer/contact validation errors to one error object.
  */
-function validateStepOne(form: CustomerBookingForm, activeVehicle: VehicleProfile | undefined, hasPackage: boolean): BookingFieldErrors {
-  const errors: BookingFieldErrors = {};
-
-  if (!hasPackage) {
-    errors.package = 'Select a package to continue.';
-  }
-
+function appendCustomerValidationErrors(
+  form: CustomerBookingForm,
+  errors: BookingFieldErrors,
+  consentMessage: string,
+): void {
   if (!hasFirstAndLastName(form.fullName)) {
     errors.fullName = 'Enter first and last name.';
   }
@@ -140,8 +141,21 @@ function validateStepOne(form: CustomerBookingForm, activeVehicle: VehicleProfil
   }
 
   if (!form.acceptedConsent) {
-    errors.acceptedConsent = 'You must accept booking consent to continue.';
+    errors.acceptedConsent = consentMessage;
   }
+}
+
+/**
+ * Validates step-one fields and returns per-field helper errors.
+ */
+function validateStepOne(form: CustomerBookingForm, activeVehicle: VehicleProfile | undefined, hasPackage: boolean): BookingFieldErrors {
+  const errors: BookingFieldErrors = {};
+
+  if (!hasPackage) {
+    errors.package = 'Select a package to continue.';
+  }
+
+  appendCustomerValidationErrors(form, errors, 'You must accept booking consent to continue.');
 
   if (!activeVehicle?.year.trim()) {
     errors.year = 'Year is required.';
@@ -168,38 +182,16 @@ function validateStepOne(form: CustomerBookingForm, activeVehicle: VehicleProfil
 function validateSubmission(form: CustomerBookingForm, vehicles: VehicleProfile[]): BookingFieldErrors {
   const errors: BookingFieldErrors = {};
   const selectedVehicles = vehicles.filter((vehicle) => vehicle.serviceIds.length > 0);
+  const selectedVehicleCount = countSelectedVehicles(vehicles);
 
-  if (!hasFirstAndLastName(form.fullName)) {
-    errors.fullName = 'Enter first and last name.';
-  }
-
-  if (!EMAIL_PATTERN.test(form.email.trim())) {
-    errors.email = 'Enter a valid email like name@provider.com.';
-  }
-
-  const phoneDigits = form.phone.replace(/\D/g, '');
-  if (phoneDigits.length < 10) {
-    errors.phone = 'Enter a valid phone number.';
-  }
-
-  if (form.zipCode.trim().length < 5) {
-    errors.zipCode = 'Enter a valid ZIP code.';
-  }
-
-  if (!hasValidConfirmationPreference(form)) {
-    errors.confirmationChannel = 'Select at least one confirmation channel.';
-  }
-
-  if (form.sendSmsConfirmation && !form.acceptedSmsConsent) {
-    errors.smsConsent = 'SMS confirmation requires consent.';
-  }
-
-  if (!form.acceptedConsent) {
-    errors.acceptedConsent = 'You must accept booking consent before submitting.';
-  }
+  appendCustomerValidationErrors(form, errors, 'You must accept booking consent before submitting.');
 
   if (selectedVehicles.length === 0) {
     errors.serviceSelection = 'Select at least one service before submitting.';
+  }
+
+  if (selectedVehicleCount > MAX_BOOKED_VEHICLES_PER_DAY) {
+    errors.selectedVehicleLimit = BOOKING_LIMIT_DISCLAIMER;
   }
 
   const missingVehicleDetails = selectedVehicles.find(
@@ -264,11 +256,10 @@ export default function BookingPage(): JSX.Element {
   );
 
   const selectedServiceIds = activeVehicle?.serviceIds ?? [];
+  const selectedServiceRecords = getVehicleServices(activeVehicleId);
   const selectedPackageId = selectedServiceIds.find((serviceId) => serviceId.startsWith('pkg-'));
-  const selectedPackage = selectedPackageId
-    ? packageServices.find((item) => item.id === selectedPackageId)
-    : undefined;
-  const selectedAddons = addonServices.filter((service) => selectedServiceIds.includes(service.id));
+  const selectedPackage = selectedServiceRecords.find((service) => service.id.startsWith('pkg-'));
+  const selectedAddons = selectedServiceRecords.filter((service) => service.category === 'addon');
   const selectedVehicles = useMemo(
     () => vehicles.filter((vehicle) => getVehicleServices(vehicle.id).length > 0),
     [getVehicleServices, vehicles],
@@ -278,13 +269,27 @@ export default function BookingPage(): JSX.Element {
     [activeVehicle, form, selectedPackageId],
   );
   const stepOneValid = Object.keys(stepOneErrors).length === 0;
+  const activeVehicleSize = activeVehicle?.size ?? 'small';
+  const basicPackage = packageServices.find((service) => service.id === 'pkg-basic');
+  const standardPackage = packageServices.find((service) => service.id === 'pkg-standard');
+  const premiumPackage = packageServices.find((service) => service.id === 'pkg-premium');
+  const basicAdjusted = basicPackage ? getAdjustedServicePrice(basicPackage.price, activeVehicleSize) : 0;
+  const standardAdjusted = standardPackage ? getAdjustedServicePrice(standardPackage.price, activeVehicleSize) : 0;
+  const premiumAdjusted = premiumPackage ? getAdjustedServicePrice(premiumPackage.price, activeVehicleSize) : 0;
+
+  /**
+   * Clears field-level errors and optimistic confirmation state before new edits.
+   */
+  function resetInteractionState(): void {
+    setFieldErrors({});
+    setBookingConfirmed(false);
+  }
 
   /**
    * Updates one customer form field while preserving other keys.
    */
   function updateCustomerField<K extends keyof CustomerBookingForm>(key: K, value: CustomerBookingForm[K]): void {
-    setFieldErrors({});
-    setBookingConfirmed(false);
+    resetInteractionState();
     setForm((current) => ({ ...current, [key]: value }));
   }
 
@@ -296,8 +301,7 @@ export default function BookingPage(): JSX.Element {
       return;
     }
 
-    setFieldErrors({});
-    setBookingConfirmed(false);
+    resetInteractionState();
     updateVehicle(activeVehicle.id, { [field]: value });
   }
 
@@ -305,13 +309,12 @@ export default function BookingPage(): JSX.Element {
    * Adds another vehicle to the booking dock up to configured max.
    */
   function handleAddVehicle(): void {
-    if (vehicles.length >= MAX_VEHICLES) {
-      setStatusMessage(`Up to ${MAX_VEHICLES} vehicles can be booked in one request.`);
+    if (vehicles.length >= MAX_BOOKED_VEHICLES_PER_DAY) {
+      setStatusMessage(BOOKING_LIMIT_DISCLAIMER);
       return;
     }
 
-    setFieldErrors({});
-    setBookingConfirmed(false);
+    resetInteractionState();
     addVehicle();
     setStatusMessage('');
   }
@@ -320,8 +323,7 @@ export default function BookingPage(): JSX.Element {
    * Removes one vehicle from the booking dock.
    */
   function handleRemoveVehicle(vehicleId: string): void {
-    setFieldErrors({});
-    setBookingConfirmed(false);
+    resetInteractionState();
     removeVehicle(vehicleId);
     setStatusMessage('');
   }
@@ -361,8 +363,7 @@ export default function BookingPage(): JSX.Element {
       return;
     }
 
-    setFieldErrors({});
-    setBookingConfirmed(false);
+    resetInteractionState();
     setSubmitting(true);
     setStatusMessage('Submitting your booking intake...');
 
@@ -436,6 +437,7 @@ export default function BookingPage(): JSX.Element {
                 <Plus className="h-4 w-4" /> Add Vehicle
               </button>
             </div>
+            <p className="mt-2 text-xs font-medium text-brandBlack/60">{BOOKING_LIMIT_DISCLAIMER}</p>
 
             <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {vehicles.map((vehicle) => {
@@ -487,32 +489,88 @@ export default function BookingPage(): JSX.Element {
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {packageServices.map((service) => {
                   const selected = selectedPackageId === service.id;
+                  const adjustedPrice = getAdjustedServicePrice(service.price, activeVehicleSize);
+                  const isStandard = service.id === 'pkg-standard';
+                  const standardVsBasic = isStandard ? standardAdjusted - basicAdjusted : 0;
+                  const premiumVsStandard = service.id === 'pkg-premium' ? adjustedPrice - standardAdjusted : 0;
+
                   return (
                     <button
                       key={service.id}
                       type="button"
                       onClick={() => {
-                        setFieldErrors({});
-                        setBookingConfirmed(false);
+                        resetInteractionState();
                         setVehiclePackage(activeVehicleId, service.id);
                       }}
                       className={`rounded-xl border p-4 text-left transition-all duration-300 hover:-translate-y-0.5 ${
                         selected
                           ? 'border-deepRed bg-deepRed/10 shadow-md'
-                          : 'border-black/10 bg-white hover:border-waterBlue hover:bg-waterBlue/10'
+                          : isStandard
+                            ? 'border-deepRed/45 bg-[#fff7f8] hover:border-deepRed hover:bg-deepRed/10'
+                            : 'border-black/10 bg-white hover:border-waterBlue hover:bg-waterBlue/10'
                       }`}
                     >
-                      <p className="font-heading text-lg font-semibold text-brandBlack">{service.name}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-heading text-lg font-semibold text-brandBlack">{service.name}</p>
+                        {isStandard ? (
+                          <span className="rounded-full bg-deepRed px-2 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-white">
+                            Best Value
+                          </span>
+                        ) : null}
+                      </div>
                       <p className="mt-1 text-xs text-brandBlack/60">{service.description}</p>
-                      <p className="mt-3 font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(service.price)}</p>
+                      {isStandard ? (
+                        <p className="mt-2 text-xs font-semibold text-deepRed">
+                          Only +{formatCurrency(standardVsBasic)} vs Basic at this size.
+                        </p>
+                      ) : null}
+                      {service.id === 'pkg-premium' ? (
+                        <p className="mt-2 text-xs text-brandBlack/65">
+                          {formatCurrency(premiumVsStandard)} above Standard at this size.
+                        </p>
+                      ) : null}
+                      {service.id === 'pkg-basic' ? (
+                        <p className="mt-2 text-xs text-brandBlack/65">
+                          Standard adds deeper coverage for +{formatCurrency(standardAdjusted - basicAdjusted)}.
+                        </p>
+                      ) : null}
+                      <p className="mt-3 font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(adjustedPrice)}</p>
                     </button>
                   );
                 })}
+              </div>
+              <div className="rounded-xl border border-black/10 bg-neutralGray p-3 text-xs">
+                <p className="font-semibold text-brandBlack/75">
+                  Size pricing active: {activeVehicleSize.toUpperCase()} ({formatSizeAdjustmentLabel(activeVehicleSize)})
+                </p>
+                <div className="mt-2 grid gap-1 sm:grid-cols-3">
+                  <p className="text-brandBlack/70">Basic: <span className="font-semibold text-brandBlack">{formatCurrency(basicAdjusted)}</span></p>
+                  <p className="text-brandBlack/70">Standard: <span className="font-semibold text-deepRed">{formatCurrency(standardAdjusted)}</span></p>
+                  <p className="text-brandBlack/70">Premium: <span className="font-semibold text-brandBlack">{formatCurrency(premiumAdjusted)}</span></p>
+                </div>
               </div>
               {fieldErrors.package ? <p className="text-xs font-medium text-deepRed">{fieldErrors.package}</p> : null}
 
               <div>
                 <h3 className="text-sm font-semibold text-brandBlack/80">Vehicle Size</h3>
+                {activeVehicle ? (
+                  <VehicleSizeGuideLookup
+                    activeVehicle={activeVehicle}
+                    onApplyLookupMatch={(match) => {
+                      resetInteractionState();
+                      updateVehicle(activeVehicle.id, {
+                        make: match.make,
+                        model: match.model,
+                        size: match.size,
+                      });
+                    }}
+                    onManualSizeChange={(size) => {
+                      resetInteractionState();
+                      updateVehicle(activeVehicle.id, { size });
+                    }}
+                    className="mt-2"
+                  />
+                ) : null}
                 <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {sizes.map((size) => {
                     const selected = activeVehicle?.size === size.id;
@@ -525,8 +583,7 @@ export default function BookingPage(): JSX.Element {
                             return;
                           }
 
-                          setFieldErrors({});
-                          setBookingConfirmed(false);
+                          resetInteractionState();
                           updateVehicle(activeVehicle.id, { size: size.id });
                         }}
                         className={`rounded-xl border px-4 py-3 text-left transition-all duration-300 ${
@@ -721,19 +778,22 @@ export default function BookingPage(): JSX.Element {
               <div>
                 <h2 className="font-heading text-2xl font-semibold text-brandBlack">Enhancements</h2>
                 <p className="mt-1 text-sm text-brandBlack/65">Select optional add-ons for {activeVehicle ? getVehicleDisplayName(activeVehicle) : 'this vehicle'}.</p>
+                <p className="mt-1 text-xs font-semibold text-brandBlack/55">
+                  Current size pricing: {activeVehicleSize.toUpperCase()} ({formatSizeAdjustmentLabel(activeVehicleSize)})
+                </p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 {addonServices.map((service) => {
                   const selected = selectedServiceIds.includes(service.id);
+                  const adjustedPrice = getAdjustedServicePrice(service.price, activeVehicleSize);
 
                   return (
                     <button
                       key={service.id}
                       type="button"
                       onClick={() => {
-                        setFieldErrors({});
-                        setBookingConfirmed(false);
+                        resetInteractionState();
                         toggleServiceForVehicle(activeVehicleId, service);
                       }}
                       className={`rounded-xl border p-4 text-left transition-all duration-300 hover:-translate-y-0.5 ${
@@ -748,7 +808,7 @@ export default function BookingPage(): JSX.Element {
                       </div>
                       <p className="mt-1 text-xs text-brandBlack/60">{service.description}</p>
                       <p className="mt-3 text-sm text-brandBlack/70">{service.duration}</p>
-                      <p className="mt-1 font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(service.price)}</p>
+                      <p className="mt-1 font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(adjustedPrice)}</p>
                     </button>
                   );
                 })}
@@ -847,9 +907,17 @@ export default function BookingPage(): JSX.Element {
 
           {fieldErrors.serviceSelection ? <p className="text-xs font-medium text-deepRed">{fieldErrors.serviceSelection}</p> : null}
           {fieldErrors.selectedVehicleDetails ? <p className="text-xs font-medium text-deepRed">{fieldErrors.selectedVehicleDetails}</p> : null}
+          {fieldErrors.selectedVehicleLimit ? <p className="text-xs font-medium text-deepRed">{fieldErrors.selectedVehicleLimit}</p> : null}
+          <p className="text-xs font-medium text-brandBlack/60">{BOOKING_LIMIT_DISCLAIMER}</p>
 
           {statusMessage ? (
-            <p className={`text-sm ${statusMessage.toLowerCase().includes('failed') || statusMessage.toLowerCase().includes('required') ? 'text-deepRed' : 'text-brandBlack/70'}`}>
+            <p className={`text-sm ${
+              statusMessage.toLowerCase().includes('failed')
+              || statusMessage.toLowerCase().includes('required')
+              || statusMessage.toLowerCase().includes('limit')
+                ? 'text-deepRed'
+                : 'text-brandBlack/70'
+            }`}>
               {statusMessage}
             </p>
           ) : null}

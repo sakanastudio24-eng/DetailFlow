@@ -16,17 +16,10 @@ export function getApiBaseUrl(): string {
 }
 
 /**
- * Returns the configured Setmore redirect URL.
- */
-export function getSetmoreUrl(): string {
-  return process.env.NEXT_PUBLIC_SETMORE_URL ?? 'https://www.setmore.com';
-}
-
-/**
  * Returns preferred calendar URL, prioritizing Cal.com.
  */
 export function getCalendarBookingUrl(): string {
-  return process.env.NEXT_PUBLIC_CAL_COM_URL ?? getSetmoreUrl();
+  return process.env.NEXT_PUBLIC_CAL_COM_URL ?? 'https://cal.com';
 }
 
 /**
@@ -74,6 +67,7 @@ export async function submitBookingIntake(payload: {
     model: vehicle.model,
     year: vehicle.year,
     color: vehicle.color,
+    size: vehicle.size,
     serviceIds: vehicle.serviceIds,
   }));
 

@@ -8,5 +8,6 @@ router = APIRouter(prefix="/contact-messages", tags=["contact"])
 
 @router.post("")
 def create_contact_message(payload: ContactMessageRequest) -> dict[str, str]:
+    """Persists one non-booking contact inquiry payload."""
     append_contact_record(payload.model_dump())
     return {"status": "accepted"}

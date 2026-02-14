@@ -5,6 +5,12 @@ from pathlib import Path
 import json
 from uuid import uuid4
 
+from app.services.booking_policy import (
+    normalize_email_for_limit,
+    normalize_phone_for_limit,
+    resolve_limit_day_key,
+)
+
 
 ROOT_DIR = Path(__file__).resolve().parents[4]
 DATA_DIR = ROOT_DIR / "data"
@@ -42,6 +48,37 @@ def append_booking_record(payload: dict) -> dict:
     records.append(persisted_record)
     _save_records(BOOKINGS_FILE, records)
     return persisted_record
+
+
+def get_bookings_by_identity_and_day(
+    email_norm: str,
+    phone_norm: str,
+    day_key: str,
+    tz_name: str,
+) -> list[dict]:
+    """Returns persisted bookings for one normalized identity on one intake day key."""
+    if not email_norm or not phone_norm:
+        return []
+
+    records = _load_records(BOOKINGS_FILE)
+    matched: list[dict] = []
+
+    for record in records:
+        customer = record.get("customer", {})
+        if not isinstance(customer, dict):
+            continue
+
+        record_email = normalize_email_for_limit(str(customer.get("email", "")))
+        record_phone = normalize_phone_for_limit(str(customer.get("phone", "")))
+        if record_email != email_norm or record_phone != phone_norm:
+            continue
+
+        submitted_at = str(record.get("submittedAt", "")).strip()
+        record_day_key = resolve_limit_day_key(submitted_at, tz_name)
+        if record_day_key == day_key:
+            matched.append(record)
+
+    return matched
 
 
 def append_contact_record(payload: dict) -> None:

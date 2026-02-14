@@ -7,7 +7,7 @@ from app.routes.contact_messages import router as contact_router
 from app.routes.health import router as health_router
 from app.routes.template_admin import router as template_admin_router
 
-app = FastAPI(title="Cruz N Clean API", version="0.1.0")
+app = FastAPI(title="Cruzn Clean API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,

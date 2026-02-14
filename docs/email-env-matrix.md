@@ -41,10 +41,13 @@
 - `PUBLIC_SITE_URL`
 - Used for links in fallback customer email content.
 
+- `BOOKING_LIMIT_TIMEZONE`
+- Default: `America/Los_Angeles`
+- Timezone used for daily vehicle-cap checks.
+
 ## Web Variables
 - `NEXT_PUBLIC_API_BASE_URL`
 - `NEXT_PUBLIC_CAL_COM_URL`
-- `NEXT_PUBLIC_SETMORE_URL` (legacy fallback when Cal URL is missing)
 
 ## Local API Example
 ```bash
@@ -58,6 +61,7 @@ RESEND_TEMPLATE_CUSTOMER_CONFIRMATION=
 RESEND_TEMPLATE_OWNER_NOTIFICATION=
 OWNER_BOOKING_MANAGE_URL=
 PUBLIC_SITE_URL=https://www.cruznclean.com
+BOOKING_LIMIT_TIMEZONE=America/Los_Angeles
 TEMPLATE_ADMIN_TOKEN=replace_with_secure_admin_token
 ```
 

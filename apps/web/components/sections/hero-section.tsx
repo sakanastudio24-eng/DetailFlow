@@ -1,80 +1,169 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
+import { ArrowRight, CarFront, PhoneCall, Sparkles } from 'lucide-react';
+import { getPackageServices } from '@/lib/services-catalog';
 
 /**
- * Renders a full-viewport landing hero with primary conversion actions.
+ * Renders an interactive split hero with vehicle-first and plan-second selection.
  */
 export function HeroSection(): JSX.Element {
+  const vehicleTypes = ['Sedan / Coupe', 'SUV / Crossover', 'Truck / Van'];
+  const detailPlans = getPackageServices().map((service) => ({
+    name: service.name,
+    price: `$${service.price}`,
+  }));
+
+  const [selectedVehicleType, setSelectedVehicleType] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+
+  const buildPlanHref =
+    selectedVehicleType && selectedPlan
+      ? `/services?vehicleType=${encodeURIComponent(selectedVehicleType)}&plan=${encodeURIComponent(selectedPlan)}`
+      : '/services';
+
   return (
     <section className="landing-hero relative overflow-hidden bg-brandBlack text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,#8cc0d63b,transparent_45%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,#56070f40,transparent_50%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(120deg,#08100dcc_0%,#10150fef_40%,#151d18f0_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(120deg,#0a140f_0%,#121a15_38%,#161f19_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,#8cc0d635,transparent_44%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_84%_74%,#56070f66,transparent_52%)]" />
+      <div className="absolute inset-y-0 right-0 hidden w-[58%] bg-[linear-gradient(180deg,#7f0912_0%,#6f0810_44%,#4e060d_100%)] lg:block" />
+      <div className="absolute bottom-[-20%] right-[20%] hidden h-72 w-72 rounded-full bg-white/10 blur-3xl lg:block" />
 
-      <div className="relative mx-auto grid min-h-[calc(100svh-var(--site-header-height))] max-w-6xl items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:gap-10">
-        <div className="fade-in-up">
-          <p className="inline-flex rounded-full border border-waterBlue/50 bg-waterBlue/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-waterBlue">
-            Mobile Detailing • Premium Finish
+      <div className="relative mx-auto grid min-h-[calc(100svh-var(--site-header-height))] w-full max-w-6xl items-center gap-6 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-[390px_minmax(0,1fr)] lg:gap-10 lg:py-12">
+        <aside className="fade-in-up order-2 rounded-3xl border border-black/10 bg-white p-5 text-brandBlack shadow-[0_16px_40px_rgba(0,0,0,0.25)] lg:order-1 lg:p-6">
+          <p className="inline-flex items-center gap-2 rounded-full border border-waterBlue/45 bg-waterBlue/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brandBlack/75">
+            <Sparkles className="h-3.5 w-3.5 text-waterBlue" />
+            Quick Detail Finder
           </p>
+          <h2 className="mt-3 font-heading text-3xl font-bold leading-tight">Find your right detail</h2>
+          <p className="mt-2 text-sm text-brandBlack/65">All selections are for new details. No retainer plans.</p>
 
-          <h1 className="mt-4 font-heading text-4xl font-semibold leading-tight sm:text-5xl">
-            Clean, correct, and protect
-            <span className="block text-white/95">without leaving your driveway.</span>
-          </h1>
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brandBlack/55">Step 1 • Select Vehicle Type</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {vehicleTypes.map((vehicleType) => (
+                <button
+                  key={vehicleType}
+                  type="button"
+                  onClick={() => setSelectedVehicleType(vehicleType)}
+                  className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                    selectedVehicleType === vehicleType
+                      ? 'border-waterBlue bg-waterBlue/20 text-brandBlack'
+                      : 'border-black/15 bg-white text-brandBlack hover:border-waterBlue hover:text-waterBlue'
+                  }`}
+                >
+                  {vehicleType}
+                </button>
+              ))}
+            </div>
+          </div>
 
-          <p className="mt-4 max-w-xl text-base text-white/80 sm:text-lg">
-            Build service plans per vehicle, submit booking intake once, and finish scheduling in Setmore with a smooth handoff.
-          </p>
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brandBlack/55">Step 2 • Select Plan</p>
+            <div className="mt-2 space-y-2">
+              {detailPlans.map((plan) => (
+                <button
+                  key={plan.name}
+                  type="button"
+                  disabled={!selectedVehicleType}
+                  onClick={() => setSelectedPlan(plan.name)}
+                  className={`flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition ${
+                    selectedPlan === plan.name
+                      ? 'border-waterBlue bg-waterBlue/15 text-brandBlack'
+                      : 'border-black/15 bg-white text-brandBlack'
+                  } ${selectedVehicleType ? 'hover:border-waterBlue hover:text-waterBlue' : 'cursor-not-allowed opacity-50'}`}
+                >
+                  <span className="font-semibold">{plan.name}</span>
+                  <span className="text-xs font-semibold">{plan.price}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-          <div className="mt-7 flex flex-wrap gap-3">
+          <div className="mt-4 rounded-xl border border-waterBlue/35 bg-waterBlue/10 px-3 py-2.5 text-xs text-brandBlack/70">
+            {selectedVehicleType ? (
+              <>
+                Vehicle: <span className="font-semibold text-brandBlack">{selectedVehicleType}</span>
+                {selectedPlan ? (
+                  <>
+                    {' '}
+                    • Plan: <span className="font-semibold text-brandBlack">{selectedPlan}</span>
+                  </>
+                ) : null}
+              </>
+            ) : (
+              'Pick a vehicle type first, then choose your detail plan.'
+            )}
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <Link
+              href={buildPlanHref}
+              className="flex items-center justify-center gap-2 rounded-xl bg-waterBlue px-4 py-3 text-sm font-semibold text-brandBlack transition duration-300 hover:bg-[#8ecde6]"
+            >
+              Build Service Plan
+              <ArrowRight className="h-4 w-4" />
+            </Link>
             <Link
               href="/booking"
-              className="rounded-full bg-deepRed px-6 py-3 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-[#6e0912]"
+              className="flex items-center justify-center gap-2 rounded-xl border border-black/20 bg-white px-4 py-3 text-sm font-semibold text-brandBlack transition duration-300 hover:border-waterBlue hover:text-waterBlue"
             >
-              Book Now
-            </Link>
-            <Link
-              href="/services"
-              className="rounded-full border border-white/45 px-6 py-3 text-sm font-semibold text-white transition duration-300 hover:bg-white hover:text-brandBlack"
-            >
-              Explore Services
+              Continue to Booking
             </Link>
           </div>
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            <article className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.12em] text-white/60">Packages</p>
-              <p className="mt-1 font-heading text-xl font-semibold text-waterBlue">3 Core</p>
-            </article>
-            <article className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.12em] text-white/60">Add-ons</p>
-              <p className="mt-1 font-heading text-xl font-semibold text-waterBlue">4 Options</p>
-            </article>
-            <article className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.12em] text-white/60">Multi-Car</p>
-              <p className="mt-1 font-heading text-xl font-semibold text-waterBlue">Dock Ready</p>
-            </article>
+          <p className="mt-3 text-center text-xs font-semibold text-brandBlack/55">No payment required to submit intake.</p>
+        </aside>
+
+        <div className="fade-in-up order-1 lg:order-2">
+          <div className="rounded-3xl border border-white/15 bg-[linear-gradient(130deg,#8a0a14_0%,#750910_42%,#5f0710_100%)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.35)] sm:p-8 lg:p-10">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/90">
+              <CarFront className="h-3.5 w-3.5" />
+              Cruzn Clean Mobile Detailing
+            </p>
+
+            <h1 className="mt-5 font-heading text-5xl font-extrabold leading-[0.95] sm:text-6xl lg:text-7xl">Revive</h1>
+            <p className="mt-3 max-w-2xl text-xl text-white/90 sm:text-2xl">your car at home, office, or curbside.</p>
+
+            <p className="mt-6 max-w-2xl text-sm text-white/80 sm:text-base">
+              Select services per vehicle, send your intake once, then lock in scheduling through Cal.com.
+            </p>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link
+                href="/booking"
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-deepRed transition duration-300 hover:-translate-y-0.5 hover:bg-neutralGray"
+              >
+                Book an Appointment
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a
+                href="tel:+15551234567"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/35 px-5 py-3 text-sm font-semibold text-white transition duration-300 hover:bg-white/10"
+              >
+                <PhoneCall className="h-4 w-4" />
+                (555) 123-4567
+              </a>
+            </div>
+
+            <div className="mt-7 grid gap-3 text-sm sm:grid-cols-3">
+              <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-white/70">Packages</p>
+                <p className="mt-1 font-semibold text-white">Basic • Standard • Premium</p>
+              </div>
+              <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-white/70">Add-Ons</p>
+                <p className="mt-1 font-semibold text-white">Ceramic, Engine, Headlights</p>
+              </div>
+              <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-3">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-white/70">Multi-Car</p>
+                <p className="mt-1 font-semibold text-white">Vehicle Dock Supported</p>
+              </div>
+            </div>
           </div>
         </div>
-
-        <aside className="fade-in-up rounded-[26px] border border-white/20 bg-white/10 p-6 backdrop-blur-md">
-          <h2 className="font-heading text-2xl font-semibold">Why this booking flow works</h2>
-          <ul className="mt-4 space-y-3 text-sm text-white/80">
-            <li className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 transition duration-300 hover:bg-black/30">
-              Select package + add-ons per vehicle in one interface.
-            </li>
-            <li className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 transition duration-300 hover:bg-black/30">
-              Keep customer details, notes, and vehicle data organized.
-            </li>
-            <li className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 transition duration-300 hover:bg-black/30">
-              Redirect to Setmore only after intake is complete.
-            </li>
-          </ul>
-
-          <div className="mt-5 rounded-xl border border-waterBlue/40 bg-waterBlue/10 p-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-waterBlue">Recommended first step</p>
-            <p className="mt-1 text-sm text-white/85">Start in Services to build vehicle plans, then continue to Book Now.</p>
-          </div>
-        </aside>
       </div>
     </section>
   );

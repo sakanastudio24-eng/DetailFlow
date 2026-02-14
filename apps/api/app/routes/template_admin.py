@@ -28,16 +28,12 @@ router = APIRouter(
     dependencies=[Depends(require_template_admin_auth)],
 )
 
-
-
 def _provider_error_to_http_error(error: TemplateAdminError) -> HTTPException:
     """Converts service-layer provider failures to stable HTTP responses."""
     return HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
         detail=str(error),
     )
-
-
 
 def _build_operation_response(operation: str, data: dict[str, Any]) -> TemplateOperationResponse:
     """Builds a stable response envelope for non-list template operations."""

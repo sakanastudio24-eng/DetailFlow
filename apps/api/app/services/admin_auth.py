@@ -5,8 +5,6 @@ from secrets import compare_digest
 
 from fastapi import HTTPException, Request, status
 
-
-
 def require_template_admin_auth(request: Request) -> None:
     """Validates bearer token auth for template-admin endpoints."""
     configured_token = os.getenv("TEMPLATE_ADMIN_TOKEN", "").strip()

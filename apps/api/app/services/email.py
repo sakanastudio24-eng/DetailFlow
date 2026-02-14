@@ -4,20 +4,13 @@ from datetime import datetime, timezone
 from html import escape
 import json
 import os
-from typing import Any
+from typing import Any, cast
 from urllib import error, request
 
-RESEND_API_URL = "https://api.resend.com/emails"
+from app.services.pricing import VehicleSize, get_adjusted_service_price
+from app.services.service_catalog import SERVICE_CATALOG
 
-SERVICE_CATALOG: dict[str, dict[str, Any]] = {
-    "pkg-basic": {"name": "Basic Detail", "price": 99},
-    "pkg-standard": {"name": "Standard Detail", "price": 189},
-    "pkg-premium": {"name": "Premium Detail", "price": 349},
-    "addon-ceramic": {"name": "Ceramic Coating", "price": 500},
-    "addon-headlight": {"name": "Headlight Restoration", "price": 75},
-    "addon-air": {"name": "Air Freshening Treatment", "price": 125},
-    "addon-engine": {"name": "Engine Bay Detail", "price": 100},
-}
+RESEND_API_URL = "https://api.resend.com/emails"
 
 
 class EmailDeliveryError(RuntimeError):
@@ -53,16 +46,27 @@ def _build_vehicle_breakdown(vehicles: list[dict[str, Any]]) -> tuple[list[dict[
     grand_total = 0
 
     for vehicle in vehicles:
+        vehicle_size = str(vehicle.get("size", "small")).strip().lower()
+        normalized_size = cast(VehicleSize, vehicle_size if vehicle_size in {"small", "medium", "large"} else "small")
         service_rows: list[dict[str, Any]] = []
         vehicle_total = 0
 
-        for service_id in vehicle.get("serviceIds", []):
+        raw_service_ids = vehicle.get("serviceIds", [])
+        service_ids = raw_service_ids if isinstance(raw_service_ids, list) else []
+
+        for raw_service_id in service_ids:
+            service_id = str(raw_service_id).strip()
+            if not service_id:
+                continue
+
             service_meta = SERVICE_CATALOG.get(service_id, {"name": service_id, "price": 0})
-            price = int(service_meta.get("price", 0))
+            base_price = int(service_meta.get("price", 0))
+            price = get_adjusted_service_price(base_price, normalized_size)
             service_rows.append(
                 {
                     "id": service_id,
                     "name": str(service_meta.get("name", service_id)),
+                    "basePrice": base_price,
                     "price": price,
                 }
             )
@@ -77,6 +81,7 @@ def _build_vehicle_breakdown(vehicles: list[dict[str, Any]]) -> tuple[list[dict[
                 "model": vehicle.get("model", ""),
                 "year": vehicle.get("year", ""),
                 "color": vehicle.get("color", ""),
+                "size": normalized_size,
                 "services": service_rows,
                 "estimatedSubtotal": vehicle_total,
             }
@@ -297,7 +302,7 @@ def _build_customer_fallback_content(template_variables: dict[str, Any]) -> dict
     estimate = template_variables["estimate"]
     site_url = os.getenv("PUBLIC_SITE_URL", "https://www.cruznclean.com").rstrip("/")
     terms_link = f"{site_url}/terms"
-    readiness_link = f"{site_url}/faq"
+    readiness_link = f"{site_url}/faq#service-readiness"
     support_email = os.getenv("EMAIL_REPLY_TO", os.getenv("EMAIL_FROM", "support@cruznclean.com")).strip()
     support_phone = "(555) 123-4567"
     address_value = customer.get("address") or customer.get("zipCode") or "Address to be confirmed"
@@ -336,7 +341,7 @@ def _build_customer_fallback_content(template_variables: dict[str, Any]) -> dict
     deposit_due = round(total_amount * 0.5, 2)
 
     lines = [
-        "Cruzn Clean order comfermation",
+        "Cruzn Clean order confirmation",
         "",
         f"Order number: {booking_id}",
         f"Order name: {customer_name}",
@@ -416,7 +421,7 @@ def _build_customer_fallback_content(template_variables: dict[str, Any]) -> dict
     )
 
     return {
-        "subject": "Cruzn Clean order comfermation",
+        "subject": "Cruzn Clean order confirmation",
         "text": "\n".join(lines),
         "html": html,
     }

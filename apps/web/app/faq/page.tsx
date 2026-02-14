@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Calendar, Car, CircleDollarSign, Shield, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -28,6 +29,16 @@ function getFaqRecords(): FaqRecord[] {
     { q: 'Do you offer ceramic coating?', a: 'Yes, ceramic coating is available as an add-on or premium bundle.', category: 'services' },
     { q: 'How is final pricing confirmed?', a: 'Final pricing is confirmed on-site based on condition and selected scope.', category: 'pricing' },
     { q: 'Do you need water or power on-site?', a: 'No, mobile service setup is prepared for on-location operation.', category: 'preparation' },
+    {
+      q: 'How should I prepare my vehicle before appointment time?',
+      a: 'Please remove valuables and personal items, unlock the vehicle, and ensure we can access the parked location.',
+      category: 'preparation',
+    },
+    {
+      q: 'Do I need to be present for the entire service?',
+      a: 'You only need to be available for handoff and completion unless we request access clarification.',
+      category: 'preparation',
+    },
     { q: 'How often should I detail my vehicle?', a: 'Most clients book maintenance every 4-8 weeks depending on use.', category: 'maintenance' },
   ];
 }
@@ -62,6 +73,58 @@ export default function FaqPage(): JSX.Element {
           <p className="mx-auto mt-4 max-w-3xl text-base text-white/75 sm:text-xl">
             Get answers to common questions about our mobile detailing services.
           </p>
+        </div>
+      </section>
+
+      <section id="service-readiness" className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <div className="rounded-2xl border border-waterBlue/35 bg-waterBlue/10 p-5 sm:p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brandBlack/60">Service Readiness</p>
+          <h2 className="mt-2 font-heading text-2xl font-semibold text-brandBlack sm:text-3xl">Before We Arrive</h2>
+          <p className="mt-2 text-sm text-brandBlack/75">
+            Use this quick checklist so your appointment starts on time and your intake details match the service scope.
+          </p>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <article className="rounded-xl border border-black/10 bg-white p-4">
+              <p className="text-sm font-semibold text-brandBlack">1. Access + Location</p>
+              <p className="mt-1 text-sm text-brandBlack/75">
+                Keep the vehicle in an accessible area and share gate/parking notes in booking details if needed.
+              </p>
+            </article>
+            <article className="rounded-xl border border-black/10 bg-white p-4">
+              <p className="text-sm font-semibold text-brandBlack">2. Vehicle Prep</p>
+              <p className="mt-1 text-sm text-brandBlack/75">
+                Remove valuables and personal items so interior areas are fully reachable for cleaning.
+              </p>
+            </article>
+            <article className="rounded-xl border border-black/10 bg-white p-4">
+              <p className="text-sm font-semibold text-brandBlack">3. Handoff</p>
+              <p className="mt-1 text-sm text-brandBlack/75">
+                Be available for start-time handoff and final walk-through so we can confirm results and payment.
+              </p>
+            </article>
+            <article className="rounded-xl border border-black/10 bg-white p-4">
+              <p className="text-sm font-semibold text-brandBlack">4. Final Scope</p>
+              <p className="mt-1 text-sm text-brandBlack/75">
+                Final pricing is confirmed on-site from actual condition and selected package/add-ons.
+              </p>
+            </article>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/terms"
+              className="rounded-full border border-black/15 bg-white px-4 py-2 text-sm font-semibold text-brandBlack transition hover:border-waterBlue hover:text-waterBlue"
+            >
+              Terms & Conditions
+            </Link>
+            <Link
+              href="/booking"
+              className="rounded-full bg-deepRed px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6f0912]"
+            >
+              Continue to Booking
+            </Link>
+          </div>
         </div>
       </section>
 
