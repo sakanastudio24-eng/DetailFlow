@@ -20,6 +20,7 @@ Documentation-first rebuild of a car detailing portfolio and booking website.
 - `/` Home
 - `/services` Multi-vehicle service planner with docking station
 - `/booking` Booking intake form (then redirect to Setmore)
+- `/email-preview` Public mock email previews (customer + owner)
 - `/contact` Question-only contact form
 - `/quote` Quote request form
 - `/gallery`
@@ -58,6 +59,7 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ## Environment Variables (API)
 - `EMAIL_PROVIDER` (default: `resend`)
 - `RESEND_API_KEY` (secret, never commit real values)
+- `TEMPLATE_ADMIN_TOKEN` (secret bearer token for `/template-admin/*`)
 - `BOOKING_OWNER_EMAIL`
 - `EMAIL_FROM`
 - `EMAIL_REPLY_TO` (optional, defaults to `EMAIL_FROM`)
@@ -77,6 +79,21 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - Visual template edits are owned in Resend template editor.
 - Backend passes structured booking variables.
 - If template IDs are not configured, backend uses fallback HTML/text bodies.
+
+## Template Admin Endpoints
+- `POST /template-admin/templates`
+- `GET /template-admin/templates/{template_id}`
+- `PATCH /template-admin/templates/{template_id}`
+- `POST /template-admin/templates/{template_id}/publish`
+- `POST /template-admin/templates/{template_id}/duplicate`
+- `DELETE /template-admin/templates/{template_id}`
+- `GET /template-admin/templates?limit=&after=`
+- Auth required on all routes: `Authorization: Bearer <TEMPLATE_ADMIN_TOKEN>`
+- Security note: API keys and admin token stay server-side only and must never be exposed in web code.
+
+## Preview Route Notes
+- `/email-preview` is public and mock-only.
+- It does not call the provider API and does not require admin credentials.
 
 ## Documentation Index
 - `docs/architecture.md`

@@ -68,3 +68,77 @@
 - `to`: recipient address
 - `errorSummary`: concise provider error
 - `retryStatus`: `pending` in V1
+
+## Template Admin API Contract
+All template-admin routes require bearer auth:
+- Header: `Authorization: Bearer <TEMPLATE_ADMIN_TOKEN>`
+
+### Endpoints
+1. `POST /template-admin/templates`
+- Creates one template.
+- Request body:
+```json
+{
+  "name": "order-confirmation",
+  "html": "<p>Name: {{{PRODUCT}}}</p><p>Total: {{{PRICE}}}</p>",
+  "variables": [
+    { "key": "PRODUCT", "type": "string", "fallback_value": "item" },
+    { "key": "PRICE", "type": "number", "fallback_value": 20 }
+  ]
+}
+```
+
+2. `GET /template-admin/templates/{template_id}`
+- Returns one template by id.
+
+3. `PATCH /template-admin/templates/{template_id}`
+- Updates mutable fields.
+- Request body:
+```json
+{
+  "name": "order-confirmation-v2",
+  "html": "<p>Total: {{{PRICE}}}</p><p>Name: {{{PRODUCT}}}</p>"
+}
+```
+
+4. `POST /template-admin/templates/{template_id}/publish`
+- Publishes template changes.
+
+5. `POST /template-admin/templates/{template_id}/duplicate`
+- Duplicates one template.
+
+6. `DELETE /template-admin/templates/{template_id}`
+- Deletes one template.
+
+7. `GET /template-admin/templates?limit=2&after=<cursor>`
+- Lists templates with optional pagination.
+
+### Stable Response Envelope
+Non-list operations:
+```json
+{
+  "status": "ok",
+  "operation": "create|get|update|publish|duplicate|delete",
+  "data": {}
+}
+```
+
+List operation:
+```json
+{
+  "status": "ok",
+  "operation": "list",
+  "templates": [],
+  "pagination": {
+    "after": null,
+    "next": null,
+    "has_more": null,
+    "object": null
+  }
+}
+```
+
+### Error Contract
+- `401`: missing/invalid bearer token.
+- `503`: template admin token is not configured.
+- `502`: provider call failed (sanitized error text).
