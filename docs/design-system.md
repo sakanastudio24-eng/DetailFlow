@@ -17,3 +17,5 @@
 ## Responsive Policy
 - Mobile-first baseline
 - Tablet and desktop breakpoints layered on top
+- Mobile and tablet (`<=1023px`) use a fixed bottom navigation dock
+- Respect iOS/Android safe-area insets for bottom navigation and overlays

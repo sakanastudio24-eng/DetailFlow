@@ -5,6 +5,7 @@
 :root {
   color-scheme: light;
   --site-header-height: 84px;
+  --mobile-nav-height: 86px;
 }
 
 * {
@@ -39,7 +40,12 @@ a {
 
 @media (max-width: 1023px) {
   :root {
-    --site-header-height: 130px;
+    --site-header-height: 84px;
+    --mobile-nav-height: 90px;
+  }
+
+  body {
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
   }
 
   .dock-shell {
@@ -58,7 +64,8 @@ a {
 
 @media (max-width: 767px) {
   :root {
-    --site-header-height: 126px;
+    --site-header-height: 80px;
+    --mobile-nav-height: 86px;
   }
 
   .dock-shell {
