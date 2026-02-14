@@ -86,10 +86,38 @@ function getPreviewConfigs(): Record<PreviewTab, EmailPreviewConfig> {
     },
     owner: {
       title: 'Owner Notification Preview',
-      subject: 'New booking intake bk_ab12cd34ef56',
-      description: 'Sent for every accepted booking intake.',
+      subject: 'New Booking Confirmed — Premium Detail — June 14',
+      description: 'Sent to owner after booking confirmation.',
       htmlPreview:
-        '<h3>New Booking Intake</h3><p><strong>Customer:</strong> Jordan Cruz</p><p><strong>Contact:</strong> jordan@example.com / (555) 123-4567</p><p><strong>Vehicle 1:</strong> 2022 Tesla Model 3, White</p><p><strong>Services:</strong> Standard Detail, Ceramic Coating</p><p><strong>Estimated Total:</strong> $689</p>',
+        "<div style='margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#10150f;'>" +
+        "<div style='max-width:700px;margin:0 auto;padding:24px 16px;'>" +
+        "<div style='background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;'>" +
+        "<div style='background:#10150f;padding:16px 20px;'>" +
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'><tr>" +
+        "<td style='color:#ffffff;font-size:22px;font-weight:700;'>Cruzn <span style='color:#8cc0d6;'>Clean</span></td>" +
+        "<td style='text-align:right;font-size:12px;color:#e5e7eb;'>Owner Alert</td>" +
+        '</tr></table></div>' +
+        "<div style='padding:20px;'>" +
+        "<p style='margin:0;font-size:23px;font-weight:800;color:#7f0912;'>New Booking Confirmed — Premium Detail — June 14</p>" +
+        "<p style='margin:8px 0 0 0;font-size:13px;color:#374151;'>This owner notification is sent after booking confirmation.</p>" +
+        "<div style='margin-top:16px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;'>" +
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>" +
+        "<tr><td style='padding:8px;background:#f9fafb;font-weight:700;font-size:13px;'>Customer name</td><td style='padding:8px;background:#f9fafb;font-size:13px;text-align:right;'>Jordan Cruz</td></tr>" +
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Phone</td><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>(555) 123-4567</td></tr>" +
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Email</td><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>jordan@example.com</td></tr>" +
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Service</td><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>Premium Detail, Ceramic Coating</td></tr>" +
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Date/time (timezone)</td><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>June 14, 2026 at 04:30 PM (UTC)</td></tr>" +
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Notes</td><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>Please call on arrival.</td></tr>" +
+        "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Booking ID</td><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;color:#7f0912;font-weight:700;'>bk_ab12cd34ef56</td></tr>" +
+        '</table></div>' +
+        "<div style='margin-top:14px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;'>" +
+        "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>" +
+        "<tr><td style='padding:10px;background:#111827;color:#ffffff;font-size:12px;font-weight:700;'>Service Line</td><td style='padding:10px;background:#111827;color:#ffffff;font-size:12px;font-weight:700;text-align:right;'>Cost</td></tr>" +
+        "<tr><td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;'>Vehicle 1 - 2022 Tesla Model 3 (White) - Premium Detail</td><td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;text-align:right;'>$349</td></tr>" +
+        "<tr><td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;'>Vehicle 1 - 2022 Tesla Model 3 (White) - Ceramic Coating</td><td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;text-align:right;'>$500</td></tr>" +
+        '</table></div>' +
+        "<p style='margin:12px 0 0 0;font-size:13px;'><a href='https://www.cruznclean.com/admin/bookings/bk_ab12cd34ef56' style='color:#7f0912;font-weight:700;text-decoration:none;'>Manage Booking</a></p>" +
+        '</div></div></div></div>',
       variables: [
         { key: 'booking.bookingId', type: 'string', fallback: 'bk_xxxxxxxxxxxx' },
         { key: 'customer.fullName', type: 'string', fallback: 'Jordan Cruz' },
