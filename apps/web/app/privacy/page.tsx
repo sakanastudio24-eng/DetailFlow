@@ -39,9 +39,13 @@ export default function PrivacyPage(): JSX.Element {
             <p className="text-sm text-brandBlack/80">
               We use third-party processors to run business operations. Current processors include:
             </p>
+            <p className="text-sm text-brandBlack/80">
+              We use third-party service providers, including Resend (email delivery) and Cal.com (scheduling),
+              to process bookings and send confirmations. These providers process data solely to deliver our services.
+            </p>
             <ul className="list-disc space-y-2 pl-5 text-sm text-brandBlack/80">
               <li>Resend (transactional email delivery and template management).</li>
-              <li>Setmore (appointment scheduling handoff).</li>
+              <li>Cal.com (appointment scheduling).</li>
               <li>Hosting provider(s) for frontend and backend infrastructure (for example, Vercel/local infrastructure).</li>
             </ul>
           </section>

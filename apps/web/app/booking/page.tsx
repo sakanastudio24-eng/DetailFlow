@@ -660,9 +660,7 @@ export default function BookingPage(): JSX.Element {
                       onChange={(event) => updateCustomerField('sendEmailConfirmation', event.target.checked)}
                       className="mt-1"
                     />
-                    <span>
-                      Email confirmations to <span className="font-semibold text-brandBlack">your email address</span>
-                    </span>
+                    <span>I agree to receive booking confirmations and service-related emails.</span>
                   </label>
 
                   <label className="flex items-start gap-2 rounded-lg border border-waterBlue/30 bg-white px-3 py-2 text-sm text-brandBlack/80">
