@@ -1,11 +1,24 @@
 # Email API Contract
 
-## Booking Intake Endpoint
+## Booking Intake APIs
+
+### Primary Endpoint
+- Method: `POST`
+- Path: `/cal-bookings`
+- Success response:
+```json
+{
+  "status": "accepted",
+  "message": "Booking intake confirmed."
+}
+```
+
+### Compatibility Alias
 - Method: `POST`
 - Path: `/booking-intakes`
-- Success response: `200` with `{ "status": "accepted" }`
+- Behavior: same processing logic as `/cal-bookings`
 
-## Request Contract
+## Booking Request Payload
 ```json
 {
   "customer": {
@@ -29,71 +42,86 @@
       "color": "Silver",
       "serviceIds": ["pkg-standard", "addon-engine"]
     }
-  ]
+  ],
+  "honeypot": ""
 }
 ```
 
-## Validation Contract
-1. Booking intake is valid only if at least one confirmation channel is selected:
-- `sendEmailConfirmation=true` OR `sendSmsConfirmation=true`.
+## Validation Rules
+1. `customer.fullName` must include first and last name.
+2. `customer.email` must be valid email format.
+3. `customer.phone` must include at least 10 digits.
+4. `customer.zipCode` must be present and valid length.
+5. At least one confirmation channel must be selected.
+6. SMS consent is required if SMS confirmation is selected.
+7. At least one vehicle is required.
+8. Each vehicle must include year, make, model, color.
+9. Each vehicle must include at least one service ID.
 
-2. SMS consent rule:
-- If `sendSmsConfirmation=true`, then `acceptedSmsConsent` must be `true`.
-
-3. Email format rule:
-- `customer.email` must be valid email syntax.
-
-## Side Effects Contract
-1. Always persist intake to `data/bookings.json` (source of truth).
-2. Attempt owner notification email based on env toggles.
-3. Attempt customer confirmation email based on preference and env toggles.
-4. On email failure, write one failure record per failed recipient to `data/email_failures.json`.
+## Processing Side Effects
+1. Persist booking in `data/bookings.json` first.
+2. Attempt owner notification send (always).
+3. Attempt customer confirmation send only when:
+- `customer.sendEmailConfirmation=true`
+- `EMAIL_CUSTOMER_ENABLED=true`
+4. Persist send failures to `data/email_failures.json`.
 
 ## Failure Contract
-- Email transport failures do not change booking endpoint success if storage succeeded.
-- Storage failure still fails the endpoint normally.
+- Honeypot-filled requests return accepted and skip persistence/send.
+- Email send failures do not fail booking acceptance after persistence.
+- Storage failure still fails the request.
 
-## Internal Persistence Contract
-### Booking record fields
-- `submittedAt`: ISO timestamp in UTC
-- `bookingId`: generated ID
-- `customer`: submitted customer object
-- `vehicles`: submitted vehicle array
+## Persistence Shapes
 
-### Email failure record fields
-- `loggedAt`: ISO timestamp in UTC
-- `bookingId`: booking reference
-- `recipientRole`: `owner` or `customer`
-- `provider`: provider name, e.g., `resend`
-- `to`: recipient address
-- `errorSummary`: concise provider error
-- `retryStatus`: `pending` in V1
+### `bookings.json` row
+- `bookingId`
+- `submittedAt`
+- `customer`
+- `vehicles`
 
-## Template Admin API Contract
-All template-admin routes require bearer auth:
-- Header: `Authorization: Bearer <TEMPLATE_ADMIN_TOKEN>`
+### `email_failures.json` row
+- `loggedAt`
+- `bookingId`
+- `recipientRole` (`owner`, `customer`, `system`)
+- `provider`
+- `to`
+- `errorSummary`
+- `retryStatus`
+
+## Template Admin API
+All `/template-admin/*` routes require:
+- `Authorization: Bearer <TEMPLATE_ADMIN_TOKEN>`
 
 ### Endpoints
-1. `POST /template-admin/templates`
-- Creates one template.
-- Request body:
+- `POST /template-admin/templates`
+- `GET /template-admin/templates`
+- `GET /template-admin/templates/{template_id}`
+- `PATCH /template-admin/templates/{template_id}`
+- `POST /template-admin/templates/{template_id}/publish`
+- `POST /template-admin/templates/{template_id}/duplicate`
+- `DELETE /template-admin/templates/{template_id}`
+
+### Create Request Shape
 ```json
 {
   "name": "order-confirmation",
   "html": "<p>Name: {{{PRODUCT}}}</p><p>Total: {{{PRICE}}}</p>",
   "variables": [
-    { "key": "PRODUCT", "type": "string", "fallback_value": "item" },
-    { "key": "PRICE", "type": "number", "fallback_value": 20 }
+    {
+      "key": "PRODUCT",
+      "type": "string",
+      "fallback_value": "item"
+    },
+    {
+      "key": "PRICE",
+      "type": "number",
+      "fallback_value": 20
+    }
   ]
 }
 ```
 
-2. `GET /template-admin/templates/{template_id}`
-- Returns one template by id.
-
-3. `PATCH /template-admin/templates/{template_id}`
-- Updates mutable fields.
-- Request body:
+### Update Request Shape
 ```json
 {
   "name": "order-confirmation-v2",
@@ -101,20 +129,8 @@ All template-admin routes require bearer auth:
 }
 ```
 
-4. `POST /template-admin/templates/{template_id}/publish`
-- Publishes template changes.
-
-5. `POST /template-admin/templates/{template_id}/duplicate`
-- Duplicates one template.
-
-6. `DELETE /template-admin/templates/{template_id}`
-- Deletes one template.
-
-7. `GET /template-admin/templates?limit=2&after=<cursor>`
-- Lists templates with optional pagination.
-
-### Stable Response Envelope
-Non-list operations:
+### Response Envelopes
+Non-list:
 ```json
 {
   "status": "ok",
@@ -123,7 +139,7 @@ Non-list operations:
 }
 ```
 
-List operation:
+List:
 ```json
 {
   "status": "ok",
@@ -138,7 +154,7 @@ List operation:
 }
 ```
 
-### Error Contract
-- `401`: missing/invalid bearer token.
-- `503`: template admin token is not configured.
-- `502`: provider call failed (sanitized error text).
+### Template Admin Error Codes
+- `401`: missing or invalid bearer token
+- `503`: admin token not configured
+- `502`: upstream provider failure (sanitized)

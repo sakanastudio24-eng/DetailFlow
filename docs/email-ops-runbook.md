@@ -1,47 +1,48 @@
 # Email Operations Runbook (V1)
 
 ## Purpose
-Daily operational process for transactional booking emails.
+Operational checks for booking transactional emails and failure handling.
 
 ## Daily Checks
-1. Confirm API health endpoint is healthy.
-2. Inspect `data/email_failures.json` for new failures.
-3. Confirm recent bookings exist in `data/bookings.json`.
-4. Validate owner inbox receives new booking notifications.
+1. Confirm API health endpoint responds.
+2. Confirm new bookings are written to `data/bookings.json`.
+3. Review `data/email_failures.json` for new rows.
+4. Verify owner inbox receives recent booking notifications.
 
 ## Failure Log Review
 - File: `data/email_failures.json`
-- Review by:
+- Inspect:
 - `loggedAt` recency
-- `recipientRole`
+- `recipientRole` (`owner`, `customer`, `system`)
 - repeated `errorSummary` patterns
 - unresolved `retryStatus=pending`
 
 ## Immediate Mitigations
-1. If provider key expired:
-- rotate `RESEND_API_KEY`
-- restart API process
+1. Provider auth issue
+- Rotate `RESEND_API_KEY`.
+- Restart API process.
 
-2. If owner recipient invalid:
-- correct `BOOKING_OWNER_EMAIL`
-- restart API process
+2. Invalid owner recipient
+- Correct `BOOKING_OWNER_EMAIL`.
+- Restart API process.
 
-3. If provider outage:
-- leave booking flow active
-- keep non-blocking policy
-- announce temporary notification delay internally
+3. Customer-side surge of failures
+- Set `EMAIL_CUSTOMER_ENABLED=false` temporarily.
+- Keep owner notifications active.
 
-## Safe Toggle Controls
-- Disable owner sends: `EMAIL_OWNER_ENABLED=false`
-- Disable customer sends: `EMAIL_CUSTOMER_ENABLED=false`
-
-## Incident Classification
-- P1: booking endpoint failing to persist intake
-- P2: all outbound emails failing but bookings continue
-- P3: template rendering issue in a subset of emails
+4. Provider outage
+- Keep booking flow live.
+- Continue non-blocking behavior.
+- Communicate email delay internally.
 
 ## Recovery Validation
-1. Submit a test booking.
-2. Confirm booking persisted.
-3. Confirm owner/customer email behavior according to toggles.
-4. Confirm no new failure rows or expected failure rows only.
+1. Submit a test booking to `POST /cal-bookings`.
+2. Confirm booking row persisted.
+3. Confirm owner notification delivery.
+4. If customer send enabled + opted in, confirm customer delivery.
+5. Confirm no new unexpected failure rows.
+
+## Incident Severity
+- P1: booking persistence failing
+- P2: booking persists but all email sends failing
+- P3: subset/template rendering issues

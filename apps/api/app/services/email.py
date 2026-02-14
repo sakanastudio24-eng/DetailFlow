@@ -95,6 +95,8 @@ def _build_template_variables(booking_record: dict[str, Any]) -> dict[str, Any]:
         "booking": {
             "bookingId": booking_record.get("bookingId", "unknown"),
             "submittedAt": booking_record.get("submittedAt", datetime.now(timezone.utc).isoformat()),
+            "scheduledAt": booking_record.get("scheduledAt", ""),
+            "scheduledTimezone": booking_record.get("scheduledTimezone", ""),
         },
         "customer": {
             "fullName": customer.get("fullName", ""),
@@ -116,6 +118,19 @@ def _build_template_variables(booking_record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _format_currency(value: int | float) -> str:
+    """Formats numeric amounts as USD-like two-decimal strings."""
+    return f"{float(value):,.2f}"
+
+
+def _resolve_booking_timestamp(booking: dict[str, Any]) -> tuple[str, str]:
+    """Resolves the best booking datetime source and optional timezone hint."""
+    scheduled_at = str(booking.get("scheduledAt", "")).strip()
+    submitted_at = str(booking.get("submittedAt", "")).strip()
+    timezone_hint = str(booking.get("scheduledTimezone", "")).strip()
+    return (scheduled_at or submitted_at), timezone_hint
+
+
 def _parse_submitted_timestamp(submitted_at: str) -> datetime:
     """Parses booking timestamps and returns a timezone-aware datetime."""
     try:
@@ -135,10 +150,10 @@ def _format_booking_date_label(submitted_at: str) -> str:
     return f"{submitted_dt.strftime('%B')} {submitted_dt.day}"
 
 
-def _format_booking_datetime_label(submitted_at: str) -> str:
+def _format_booking_datetime_label(submitted_at: str, timezone_hint: str = "") -> str:
     """Formats a submitted timestamp with explicit timezone context."""
     submitted_dt = _parse_submitted_timestamp(submitted_at)
-    timezone_label = submitted_dt.tzname() or "UTC"
+    timezone_label = timezone_hint or submitted_dt.tzname() or "UTC"
     return f"{submitted_dt.strftime('%B')} {submitted_dt.day}, {submitted_dt.year} at {submitted_dt.strftime('%I:%M %p')} ({timezone_label})"
 
 
@@ -161,9 +176,9 @@ def _build_owner_fallback_content(template_variables: dict[str, Any]) -> dict[st
     customer = template_variables["customer"]
     vehicles = template_variables["vehicles"]
     booking_id = str(booking["bookingId"])
-    submitted_at = str(booking["submittedAt"])
-    submitted_datetime = _format_booking_datetime_label(submitted_at)
-    submitted_date = _format_booking_date_label(submitted_at)
+    booking_timestamp, timezone_hint = _resolve_booking_timestamp(booking)
+    submitted_datetime = _format_booking_datetime_label(booking_timestamp, timezone_hint)
+    submitted_date = _format_booking_date_label(booking_timestamp)
     manage_link = _build_owner_manage_link(booking_id)
     notes = customer["notes"] or "None"
 
@@ -176,7 +191,7 @@ def _build_owner_fallback_content(template_variables: dict[str, Any]) -> dict[st
             receipt_rows.append(
                 "<tr>"
                 f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;'>{escape(vehicle['label'])} - {escape(vehicle_name)} - {escape(service['name'])}</td>"
-                f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;text-align:right;'>${int(service['price'])}</td>"
+                f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;text-align:right;'>${_format_currency(int(service['price']))}</td>"
                 "</tr>"
             )
 
@@ -286,6 +301,9 @@ def _build_customer_fallback_content(template_variables: dict[str, Any]) -> dict
     support_email = os.getenv("EMAIL_REPLY_TO", os.getenv("EMAIL_FROM", "support@cruznclean.com")).strip()
     support_phone = "(555) 123-4567"
     address_value = customer.get("address") or customer.get("zipCode") or "Address to be confirmed"
+    booking_id = str(booking["bookingId"])
+    customer_name = str(customer["fullName"])
+    customer_phone = str(customer["phone"])
 
     service_charge_total = 0
     other_services_total = 0
@@ -298,8 +316,8 @@ def _build_customer_fallback_content(template_variables: dict[str, Any]) -> dict
             price = int(service["price"])
             receipt_rows.append(
                 "<tr>"
-                f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;'>{vehicle['label']} - {vehicle_name} - {service['name']}</td>"
-                f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;text-align:right;'>${price}</td>"
+                f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;'>{escape(vehicle['label'])} - {escape(vehicle_name)} - {escape(service['name'])}</td>"
+                f"<td style='padding:8px;border-bottom:1px solid #e5e7eb;color:#10150f;font-size:13px;text-align:right;'>${_format_currency(price)}</td>"
                 "</tr>"
             )
             if str(service["id"]).startswith("pkg-"):
@@ -320,18 +338,18 @@ def _build_customer_fallback_content(template_variables: dict[str, Any]) -> dict
     lines = [
         "Cruzn Clean order comfermation",
         "",
-        f"Order number: {booking['bookingId']}",
-        f"Order name: {customer['fullName']}",
+        f"Order number: {booking_id}",
+        f"Order name: {customer_name}",
         "",
         "THANK YOU ✓",
         "Your receipt:",
-        f"Name: {customer['fullName']}",
+        f"Name: {customer_name}",
         f"Address: {address_value}",
-        f"Number: {customer['phone']}",
-        f"Service charge cost: ${service_charge_total}",
-        f"Other services: {other_services_text} (${other_services_total})",
-        f"Total amount due: ${total_amount}",
-        f"Payment info: 50% deposit on sight (${deposit_due}) and 50% on completion (${deposit_due})",
+        f"Number: {customer_phone}",
+        f"Service charge cost: ${_format_currency(service_charge_total)}",
+        f"Other services: {other_services_text} (${_format_currency(other_services_total)})",
+        f"Total amount due: ${_format_currency(total_amount)}",
+        f"Payment info: 50% deposit due on site (${_format_currency(deposit_due)}) and 50% due on completion (${_format_currency(deposit_due)})",
         f"Terms and service readiness: {terms_link} | {readiness_link}",
         f"For inquiries call/email: {support_phone} | {support_email}",
     ]
@@ -354,8 +372,8 @@ def _build_customer_fallback_content(template_variables: dict[str, Any]) -> dict
         "</div>"
         "<div style='padding:20px;'>"
         "<p style='margin:0;font-size:12px;color:#6b7280;'>Order Number</p>"
-        f"<p style='margin:4px 0 0 0;font-size:16px;font-weight:700;color:#7f0912;'>{booking['bookingId']}</p>"
-        f"<p style='margin:4px 0 0 0;font-size:13px;color:#374151;'>Order Name: {customer['fullName']}</p>"
+        f"<p style='margin:4px 0 0 0;font-size:16px;font-weight:700;color:#7f0912;'>{escape(booking_id)}</p>"
+        f"<p style='margin:4px 0 0 0;font-size:13px;color:#374151;'>Order Name: {escape(customer_name)}</p>"
         "<div style='margin-top:18px;padding:14px;border:1px solid #bbf7d0;background:#f0fdf4;border-radius:10px;'>"
         "<p style='margin:0;font-size:28px;font-weight:800;color:#166534;'>THANK YOU ✓</p>"
         "<p style='margin:6px 0 0 0;font-size:13px;color:#166534;'>Your booking intake has been confirmed.</p>"
@@ -363,11 +381,11 @@ def _build_customer_fallback_content(template_variables: dict[str, Any]) -> dict
         "<h2 style='margin:18px 0 8px 0;font-size:18px;color:#10150f;'>Receipt</h2>"
         "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>"
         "<tr><td style='padding:8px;background:#f9fafb;font-weight:700;font-size:13px;'>Name</td>"
-        f"<td style='padding:8px;background:#f9fafb;font-size:13px;text-align:right;'>{customer['fullName']}</td></tr>"
+        f"<td style='padding:8px;background:#f9fafb;font-size:13px;text-align:right;'>{escape(customer_name)}</td></tr>"
         "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Address</td>"
-        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>{address_value}</td></tr>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>{escape(address_value)}</td></tr>"
         "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-weight:700;font-size:13px;'>Number</td>"
-        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>{customer['phone']}</td></tr>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>{escape(customer_phone)}</td></tr>"
         "</table>"
         "<div style='margin-top:14px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;'>"
         "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>"
@@ -375,22 +393,22 @@ def _build_customer_fallback_content(template_variables: dict[str, Any]) -> dict
         "<td style='padding:10px;background:#111827;color:#ffffff;font-size:12px;font-weight:700;text-align:right;'>Cost</td></tr>"
         f"{''.join(receipt_rows)}"
         "<tr><td style='padding:8px;background:#f9fafb;font-size:13px;font-weight:700;'>Service charge cost</td>"
-        f"<td style='padding:8px;background:#f9fafb;font-size:13px;text-align:right;'>${service_charge_total}</td></tr>"
+        f"<td style='padding:8px;background:#f9fafb;font-size:13px;text-align:right;'>${_format_currency(service_charge_total)}</td></tr>"
         "<tr><td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;font-weight:700;'>Other services</td>"
-        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>${other_services_total}</td></tr>"
+        f"<td style='padding:8px;border-top:1px solid #e5e7eb;font-size:13px;text-align:right;'>${_format_currency(other_services_total)}</td></tr>"
         "<tr><td style='padding:10px;background:#7f0912;color:#ffffff;font-size:14px;font-weight:800;'>Total amount due</td>"
-        f"<td style='padding:10px;background:#7f0912;color:#ffffff;font-size:14px;font-weight:800;text-align:right;'>${total_amount}</td></tr>"
+        f"<td style='padding:10px;background:#7f0912;color:#ffffff;font-size:14px;font-weight:800;text-align:right;'>${_format_currency(total_amount)}</td></tr>"
         "</table>"
         "</div>"
         "<div style='margin-top:14px;padding:12px;border:1px solid #fecaca;background:#fff1f2;border-radius:10px;'>"
         "<p style='margin:0;font-size:13px;font-weight:700;color:#7f0912;'>Payment info</p>"
-        f"<p style='margin:6px 0 0 0;font-size:13px;color:#7f0912;'>Payment will be concluded by a 50%deposite on sight (${deposit_due}) and 50% deposite on compleation (${deposit_due}).</p>"
+        f"<p style='margin:6px 0 0 0;font-size:13px;color:#7f0912;'>Payment will be concluded by a 50% deposit due on site (${_format_currency(deposit_due)}) and 50% deposit due on completion (${_format_currency(deposit_due)}).</p>"
         "</div>"
         "<p style='margin:14px 0 0 0;font-size:13px;'>"
         f"<a href='{terms_link}' style='color:#7f0912;font-weight:700;text-decoration:none;'>Terms & Conditions</a> | "
         f"<a href='{readiness_link}' style='color:#7f0912;font-weight:700;text-decoration:none;'>Service Readiness</a>"
         "</p>"
-        f"<p style='margin:10px 0 0 0;font-size:13px;color:#374151;'>For any inquiries call/email: {support_phone} | {support_email}</p>"
+        f"<p style='margin:10px 0 0 0;font-size:13px;color:#374151;'>For any inquiries call/email: {escape(support_phone)} | {escape(support_email)}</p>"
         "</div>"
         "</div>"
         "</div>"

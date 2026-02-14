@@ -1,19 +1,24 @@
-# Homepage V1 (Section C)
+# Homepage V1
 
 ## Scope
-- Route implemented: `/`
+- Route: `/`
 - Mobile-first responsive layout
-- Header, hero, service teaser, results teaser, and CTA/footer
+- Shared header/footer shell
+- Hero, services preview, gallery preview, trust/results sections, CTA
 
-## Component Breakdown
-- `SiteHeader`: primary nav and booking button
-- `HeroSection`: value proposition and CTA actions
-- `ServicesSection`: package preview cards
-- `ResultsSection`: trust-building outcomes
-- `CtaSection`: booking/quote closing actions
-- `SiteFooter`: legal links and short brand line
+## Core Components
+- `SiteHeader`
+- `HeroSection`
+- `ServicesSection`
+- `GalleryPreviewSection`
+- `ResultsSection`
+- `CtaSection`
+- `SiteFooter`
+
+## Related Navigation
+- Desktop + mobile nav include:
+- Home, Services, Gallery, Email Preview, Quote, Book
 
 ## Deferred
-- Full multi-page routing implementation
-- Setmore redirect integration details
-- Form intake and backend wiring
+- Direct booking confirmation telemetry from homepage CTAs
+- A/B testing for hero copy and CTA sequencing

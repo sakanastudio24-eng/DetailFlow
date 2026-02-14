@@ -1,33 +1,38 @@
 # Email Testing Checklist
 
-## Unit-Level
-- [ ] Confirmation preference validation rejects no-channel payload.
-- [ ] SMS consent validation rejects SMS-without-consent payload.
-- [ ] Vehicle estimate mapping returns expected per-vehicle and grand totals.
-- [ ] Customer email gating respects `sendEmailConfirmation`.
-- [ ] Owner email path always attempts when enabled.
+## Validation
+- [ ] Reject payload when no confirmation channel is selected.
+- [ ] Reject payload when SMS confirmation is selected without SMS consent.
+- [ ] Reject payload when full name does not include first + last name.
+- [ ] Reject payload when vehicle/service requirements are missing.
 
-## Integration-Level
-- [ ] `POST /booking-intakes` persists booking record.
-- [ ] Endpoint returns accepted when provider send fails.
-- [ ] Failed send appends row to `data/email_failures.json`.
-- [ ] Both owner/customer emails sent on full valid payload.
-- [ ] Owner-only email sent when customer email preference is disabled.
+## Booking + Email Integration
+- [ ] `POST /cal-bookings` persists booking record.
+- [ ] `POST /booking-intakes` alias behaves the same as `/cal-bookings`.
+- [ ] Owner notification send is attempted for accepted bookings.
+- [ ] Customer send is attempted only when opted in and enabled.
+- [ ] API returns accepted when provider send fails after persistence.
+- [ ] Failed sends append rows to `data/email_failures.json`.
 
-## UI-Level
-- [ ] Booking form shows confirmation preferences block.
-- [ ] SMS consent checkbox appears only when SMS confirmation selected.
-- [ ] Validation message appears for missing confirmation channel.
-- [ ] Booking flow still redirects to Setmore after accepted response.
+## Template and Fallback Behavior
+- [ ] Template IDs set: provider template send succeeds.
+- [ ] Template IDs empty: fallback HTML/text send succeeds.
+- [ ] Provider/template errors are sanitized and do not leak secrets.
+
+## UI Contract
+- [ ] Booking form displays email opt-in consent text clearly.
+- [ ] Invalid fields show helper message + red error state.
+- [ ] Success state shows confirmation checkmark/message after submit.
+- [ ] Calendar handoff goes to Cal.com URL (or configured fallback).
 
 ## Responsive Regression
-- [ ] `<=479px` booking form is usable and controls are visible.
-- [ ] `480-767px` no overlap with fixed bottom nav.
-- [ ] `768-1023px` tablet layout remains functional with bottom nav.
-- [ ] `>=1024px` desktop summary column behavior unchanged.
+- [ ] `<=479px` booking flow usable.
+- [ ] `480-767px` bottom nav and form controls do not overlap.
+- [ ] `768-1023px` tablet layout remains stable.
+- [ ] `>=1024px` desktop booking summary remains aligned.
 
-## Email Client Manual QA
-- [ ] Customer email looks correct in Gmail.
-- [ ] Customer email looks correct in Apple Mail.
-- [ ] Owner notification renders data blocks correctly.
-- [ ] Links and text fallback content are readable.
+## Email Client QA
+- [ ] Customer email renders correctly in Gmail.
+- [ ] Customer email renders correctly in Apple Mail.
+- [ ] Owner email renders in the same brand style.
+- [ ] Links and plain-text fallback are readable.

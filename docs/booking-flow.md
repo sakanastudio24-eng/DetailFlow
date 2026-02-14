@@ -1,17 +1,27 @@
-# Booking Flow (Implemented V1)
+# Booking Flow (Current)
 
-1. Customer configures services per vehicle in `/services`.
-2. Dock stores multiple vehicles and selected services in client state.
-3. Customer completes intake fields in `/booking`.
-4. Customer selects confirmation preferences (email and/or SMS with explicit SMS consent).
-5. Frontend submits intake payload to FastAPI `POST /booking-intakes`.
-6. API validates confirmation preference rules.
-7. API stores intake in `data/bookings.json`.
-8. API attempts owner notification email (always, when enabled).
-9. API attempts customer confirmation email only if `sendEmailConfirmation=true` (when enabled).
-10. API logs any delivery failures to `data/email_failures.json` and still returns accepted status.
-11. Frontend redirects user to Setmore for final time-slot booking.
+## Customer Path
+1. Customer selects services per vehicle in `/services`.
+2. Vehicle/service state is carried into `/booking`.
+3. Customer completes intake fields and communication preferences.
+4. Frontend posts payload to `POST /cal-bookings`.
+5. API returns accepted and frontend shows confirmation state.
+6. Customer proceeds to Cal.com for slot selection.
+
+## API Processing Order
+1. Validate payload (name, email, vehicle fields, service selection, consent rules).
+2. Run anti-bot honeypot check.
+3. Run rate-limit placeholder hook.
+4. Persist booking in `data/bookings.json`.
+5. Trigger transactional email pipeline.
+6. Log any email failure rows in `data/email_failures.json`.
+7. Return accepted response regardless of send failure if persistence succeeded.
+
+## Email Send Rules
+- Owner notification: always attempted.
+- Customer confirmation: attempted only when `customer.sendEmailConfirmation=true` and `EMAIL_CUSTOMER_ENABLED=true`.
+- SMS preference is captured/validated, but SMS delivery is not part of V1.
 
 ## Parallel Contact Flow
-- `/contact` posts non-booking questions to `POST /contact-messages`.
-- API stores contact messages in `data/contacts.json`.
+- `/contact` submits to `POST /contact-messages`.
+- Contact payloads are persisted to `data/contacts.json`.

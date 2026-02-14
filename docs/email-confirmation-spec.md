@@ -1,70 +1,69 @@
-# Email Confirmation Specification (Phase V1)
+# Email Confirmation Specification (V1)
 
 ## Purpose
-Define transactional booking email behavior for Cruz N Clean V2 using a hybrid model:
-- FastAPI controls trigger logic and payload mapping.
-- Resend handles delivery and no-code template management.
+Define transactional booking email behavior for Cruzn Clean using:
+- FastAPI for validation, trigger order, and failure policy
+- Resend for delivery and template hosting
 
-## Goals
-- Send customer confirmation email when customer opted into email confirmations.
-- Send owner notification email for every accepted booking intake.
-- Never block booking intake success when email delivery fails.
-- Persist actionable failure metadata to local JSON logs.
+## Scope
+- Owner notification email for every accepted booking intake
+- Customer confirmation email when customer opts in
+- Failure logging without blocking booking acceptance
 
-## Non-Goals (V1)
-- SMS delivery implementation.
-- Retry queue/worker orchestration.
-- Marketing campaign sending.
+## Non-Goals
+- SMS delivery implementation
+- Retry worker/queue automation
+- Marketing campaigns
 
 ## Trigger Source
-- Endpoint: `POST /booking-intakes`
-- Trigger moment: after booking intake is persisted to `data/bookings.json`.
+- Primary endpoint: `POST /cal-bookings`
+- Compatibility alias: `POST /booking-intakes`
+- Trigger moment: after booking persistence to `data/bookings.json`
+
+## Processing Order
+1. Validate request payload.
+2. Reject via rate-limit guard when applicable.
+3. Ignore bot traffic when honeypot is filled.
+4. Persist booking record.
+5. Attempt owner notification send.
+6. Attempt customer confirmation send when allowed.
+7. Persist any email failures to `data/email_failures.json`.
+8. Return accepted response when persistence succeeded.
 
 ## Send Rules
 1. Owner notification
-- Always attempted when `EMAIL_OWNER_ENABLED=true`.
-- Recipient from `BOOKING_OWNER_EMAIL`.
+- Always attempted.
+- Recipient is `BOOKING_OWNER_EMAIL`.
 
 2. Customer confirmation
-- Attempted only when both conditions are true:
-- `EMAIL_CUSTOMER_ENABLED=true`
+- Attempted only when both are true:
 - `customer.sendEmailConfirmation=true`
+- `EMAIL_CUSTOMER_ENABLED=true` (default true)
 
-3. SMS preference handling
-- `sendSmsConfirmation` and `acceptedSmsConsent` are stored and validated.
-- No SMS provider send is attempted in V1.
+3. SMS preference
+- `sendSmsConfirmation` and `acceptedSmsConsent` are validated and stored.
+- SMS delivery is out of scope for V1.
 
-## Delivery Policy
-- Policy: non-blocking.
-- Booking API returns accepted once storage succeeds.
-- Email failures are logged to `data/email_failures.json`.
-
-## Template Model
-- Primary mode: provider-managed Resend templates.
-- Required IDs:
+## Delivery Model
+- Provider: `EMAIL_PROVIDER=resend`
+- Template-first send attempts when template IDs exist:
 - `RESEND_TEMPLATE_CUSTOMER_CONFIRMATION`
 - `RESEND_TEMPLATE_OWNER_NOTIFICATION`
-- Fallback mode (when template IDs are absent): provider API sends generated HTML + text bodies.
+- Fallback HTML/text send is used when template IDs are missing or template request payload shape fails.
 
-## Template Variables
-- Booking identifiers: `bookingId`, `submittedAt`.
-- Customer profile: name, email, phone, zip.
-- Preferences: email confirmation flag, SMS preference, SMS consent.
-- Vehicles: label/year/make/model/color, service IDs, estimated subtotal.
-- Booking estimate: estimated grand total (from static service map in API).
-
-## Failure Handling
-- Each failed send writes one failure row with:
+## Failure Policy
+- Booking acceptance is non-blocking on email delivery.
+- Each failed send logs one row to `data/email_failures.json`.
+- Failure row fields:
 - `loggedAt`
 - `bookingId`
-- `recipientRole` (`owner` or `customer`)
+- `recipientRole` (`owner`, `customer`, `system`)
 - `provider`
 - `to`
 - `errorSummary`
 - `retryStatus` (`pending` in V1)
 
-## Security and Compliance Notes
-- API key is read from env var only.
-- No secret values are persisted to JSON logs.
-- Email channel is transactional only in V1.
-- Privacy policy and legal review required before public launch.
+## Security Notes
+- `RESEND_API_KEY` is env-only and never returned in API responses.
+- `TEMPLATE_ADMIN_TOKEN` protects template admin routes.
+- Logs contain sanitized provider errors only.

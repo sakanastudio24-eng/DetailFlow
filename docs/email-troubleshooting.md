@@ -1,39 +1,40 @@
 # Email Troubleshooting Guide
 
-## Symptom: Bookings save but no emails arrive
+## Symptom: bookings save but no emails arrive
 Checks:
-1. Confirm `EMAIL_OWNER_ENABLED` / `EMAIL_CUSTOMER_ENABLED` flags.
-2. Confirm `RESEND_API_KEY` is set and valid.
-3. Confirm `BOOKING_OWNER_EMAIL` is valid.
-4. Inspect `data/email_failures.json` for provider errors.
+1. Verify `EMAIL_PROVIDER=resend`.
+2. Verify `RESEND_API_KEY` exists and is valid.
+3. Verify `BOOKING_OWNER_EMAIL` is configured.
+4. Inspect `data/email_failures.json` for recent errors.
 
-## Symptom: Customer email not sent
+## Symptom: customer email not sent
 Checks:
-1. Verify booking payload has `sendEmailConfirmation=true`.
+1. Verify payload has `customer.sendEmailConfirmation=true`.
 2. Verify `EMAIL_CUSTOMER_ENABLED=true`.
-3. Check failure logs for recipient-role `customer`.
+3. Check failure rows where `recipientRole=customer`.
 
-## Symptom: Owner email not sent
+## Symptom: owner email not sent
 Checks:
-1. Verify `EMAIL_OWNER_ENABLED=true`.
-2. Verify `BOOKING_OWNER_EMAIL` configured.
-3. Check failure logs for recipient-role `owner`.
+1. Verify `BOOKING_OWNER_EMAIL` value is correct.
+2. Check failure rows where `recipientRole=owner`.
+3. Confirm provider/domain is not blocked.
 
-## Symptom: Template variables missing
+## Symptom: template variables missing
 Checks:
-1. Confirm template IDs point to intended templates.
-2. Confirm variable names in provider template match backend payload keys.
-3. Temporarily remove template IDs to use fallback HTML/text rendering for isolation.
+1. Verify template IDs point to expected templates.
+2. Verify provider template variable names match payload keys.
+3. Temporarily clear template IDs to validate fallback HTML/text output.
 
-## Symptom: Endpoint returns validation error
+## Symptom: validation error on booking submit
 Checks:
-1. At least one confirmation channel must be selected.
-2. If SMS confirmation is selected, SMS consent must be true.
-3. Email must pass syntax validation.
+1. Ensure full name contains first + last name.
+2. Ensure at least one confirmation channel selected.
+3. Ensure SMS consent is checked when SMS confirmations are selected.
+4. Ensure each vehicle has required fields and at least one service.
 
-## Symptom: High failure volume
+## Symptom: high failure volume
 Actions:
 1. Keep booking endpoint active (non-blocking policy).
-2. Toggle off customer sends first.
-3. Investigate provider status and auth records.
-4. Re-enable after smoke test passes.
+2. Temporarily disable customer sends (`EMAIL_CUSTOMER_ENABLED=false`).
+3. Investigate provider status + credentials.
+4. Re-enable after successful smoke test.

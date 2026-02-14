@@ -1,38 +1,37 @@
-# Email Rollout Plan
+# Email Rollout Plan (V1)
 
-## Stage 1: Development Baseline
-1. Configure API env vars with test addresses.
-2. Keep domain/sender in sandbox-compatible mode.
-3. Submit sample bookings and verify logs.
+## Stage 1: Local Baseline
+1. Configure API `.env` with test addresses and placeholder-safe values.
+2. Send sample bookings through `/cal-bookings`.
+3. Verify owner notifications and failure logs.
 
 ## Stage 2: Template Readiness
-1. Create customer and owner templates in Resend dashboard.
-2. Assign template IDs to env vars.
-3. Validate variable substitution and branding.
+1. Create customer + owner templates in Resend.
+2. Set `RESEND_TEMPLATE_CUSTOMER_CONFIRMATION` and `RESEND_TEMPLATE_OWNER_NOTIFICATION`.
+3. Verify variable mapping for multi-vehicle payloads.
 
 ## Stage 3: Domain Authentication
-1. Configure SPF and DKIM for sender domain.
-2. Verify sender domain in provider dashboard.
-3. Test deliverability to internal inboxes.
+1. Configure SPF/DKIM for sender domain.
+2. Verify domain status in Resend.
+3. Run inbox checks (Gmail + Apple Mail baseline).
 
-## Stage 4: Production Enablement
-1. Enable owner sends (`EMAIL_OWNER_ENABLED=true`).
+## Stage 4: Controlled Enablement
+1. Keep owner notifications active.
 2. Enable customer sends (`EMAIL_CUSTOMER_ENABLED=true`).
-3. Run smoke tests from real booking UI.
+3. Run smoke tests from booking UI and review failure logs.
 
-## Stage 5: Early Monitoring Window (First 7 Days)
+## Stage 5: Early Monitoring (First 7 Days)
 1. Review `data/email_failures.json` daily.
-2. Track repeated error classes.
+2. Track repeating provider error classes.
 3. Confirm booking acceptance rate is unaffected.
 
 ## Rollback Strategy
-- If delivery instability occurs:
+- If delivery is unstable:
 - set `EMAIL_CUSTOMER_ENABLED=false`
-- keep owner notifications enabled if stable
-- if needed, set `EMAIL_OWNER_ENABLED=false`
-- continue accepting bookings and preserve data
+- keep owner notifications active
+- keep booking endpoint non-blocking and live
 
-## Deferred Work (Phase 2+)
-- Add retry worker/job for failure queue.
-- Add provider webhooks for delivery/open status.
-- Add SMS provider integration with consent-compliant flow.
+## Deferred Work
+- Add retry worker for pending failures.
+- Add delivery-status webhooks.
+- Add SMS provider delivery flow.
