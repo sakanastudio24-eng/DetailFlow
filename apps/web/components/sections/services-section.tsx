@@ -13,7 +13,7 @@ export function ServicesSection(): JSX.Element {
       <div className="fade-in-up mb-8 flex items-end justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-deepRed">Detail Packages</p>
-          <h2 className="mt-2 font-heading text-4xl font-semibold text-brandBlack sm:text-5xl">Choose your service level</h2>
+          <h2 className="mt-2 font-heading text-3xl font-semibold text-brandBlack sm:text-4xl">Choose your service level</h2>
         </div>
         <Link href="/services" className="text-sm font-semibold text-deepRed transition duration-300 hover:text-brandBlack">
           Full service menu
@@ -27,7 +27,7 @@ export function ServicesSection(): JSX.Element {
             style={{ animationDelay: `${index * 120}ms` }}
           >
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-waterBlue">from {service.priceFrom}</p>
-            <h3 className="mt-2 font-heading text-3xl font-semibold text-brandBlack">{service.title}</h3>
+            <h3 className="mt-2 font-heading text-2xl font-semibold text-brandBlack">{service.title}</h3>
             <p className="mt-2 text-sm text-brandBlack/75">{service.description}</p>
           </article>
         ))}

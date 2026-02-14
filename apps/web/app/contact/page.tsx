@@ -52,7 +52,7 @@ export default function ContactPage(): JSX.Element {
       <section className="bg-brandBlack px-4 py-12 text-white sm:px-6 sm:py-16">
         <div className="mx-auto max-w-4xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-waterBlue">Contact</p>
-          <h1 className="mt-3 font-heading text-3xl font-extrabold sm:text-5xl">Questions before booking?</h1>
+          <h1 className="mt-3 font-heading text-3xl font-extrabold sm:text-4xl">Questions before booking?</h1>
           <p className="mt-4 text-sm text-white/80 sm:text-base">
             Use this form for general questions only. For appointments, use Book Now.
           </p>

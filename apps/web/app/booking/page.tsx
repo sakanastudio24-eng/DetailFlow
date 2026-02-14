@@ -154,7 +154,7 @@ export default function BookingPage(): JSX.Element {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#8cc0d633,transparent_55%)]" />
         <div className="relative mx-auto max-w-6xl">
           <div className="rounded-[32px] border border-white/15 bg-white/10 px-6 py-8 backdrop-blur-md sm:px-10 sm:py-10">
-            <h1 className="text-center font-heading text-5xl font-semibold sm:text-7xl">Book Your Appointment</h1>
+            <h1 className="text-center font-heading text-4xl font-semibold sm:text-5xl">Book Your Appointment</h1>
             <p className="mt-3 text-center text-base text-white/80 sm:text-xl">Three simple steps to a pristine vehicle.</p>
 
             <div className="mx-auto mt-8 max-w-4xl">
@@ -213,7 +213,7 @@ export default function BookingPage(): JSX.Element {
           {step === 1 ? (
             <>
               <section>
-                <h2 className="font-heading text-3xl font-semibold text-brandBlack">Your Details</h2>
+                <h2 className="font-heading text-2xl font-semibold text-brandBlack">Your Details</h2>
                 <p className="mt-1 text-sm text-brandBlack/65">Select package and vehicle profile to start booking.</p>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -232,7 +232,7 @@ export default function BookingPage(): JSX.Element {
                       >
                         <p className="font-heading text-xl font-bold text-brandBlack">{service.name}</p>
                         <p className="mt-1 text-xs text-brandBlack/60">{service.description}</p>
-                        <p className="mt-3 font-heading text-3xl font-extrabold text-deepRed">${service.price}</p>
+                        <p className="mt-3 font-heading text-2xl font-extrabold text-deepRed">${service.price}</p>
                       </button>
                     );
                   })}
@@ -332,7 +332,7 @@ export default function BookingPage(): JSX.Element {
 
           {step === 2 ? (
             <section>
-              <h2 className="font-heading text-3xl font-semibold text-brandBlack">Enhancements</h2>
+              <h2 className="font-heading text-2xl font-semibold text-brandBlack">Enhancements</h2>
               <p className="mt-1 text-sm text-brandBlack/65">Optional services to maximize finish quality.</p>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -352,7 +352,7 @@ export default function BookingPage(): JSX.Element {
                     >
                       <p className="font-heading text-xl font-bold text-brandBlack">{service.name}</p>
                       <p className="mt-1 text-xs text-brandBlack/60">{service.description}</p>
-                      <p className="mt-3 font-heading text-3xl font-extrabold text-deepRed">${service.price}</p>
+                      <p className="mt-3 font-heading text-2xl font-extrabold text-deepRed">${service.price}</p>
                     </button>
                   );
                 })}
@@ -372,7 +372,7 @@ export default function BookingPage(): JSX.Element {
 
           {step === 3 ? (
             <section>
-              <h2 className="font-heading text-3xl font-semibold text-brandBlack">Schedule</h2>
+              <h2 className="font-heading text-2xl font-semibold text-brandBlack">Schedule</h2>
               <p className="mt-1 text-sm text-brandBlack/65">Confirm your intake and continue to Setmore for time-slot selection.</p>
 
               <div className="mt-4 rounded-xl border border-black/10 bg-neutralGray p-4">
@@ -466,7 +466,7 @@ export default function BookingPage(): JSX.Element {
             <div className="rounded-xl bg-neutralGray p-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-brandBlack">Subtotal</span>
-                <span className="font-heading text-3xl font-extrabold text-deepRed">${activeVehicle ? getVehicleTotal(activeVehicle.id) : 0}</span>
+                <span className="font-heading text-2xl font-extrabold text-deepRed">${activeVehicle ? getVehicleTotal(activeVehicle.id) : 0}</span>
               </div>
               <p className="mt-1 text-xs text-brandBlack/60">Final price confirmed on-site</p>
             </div>

@@ -8,7 +8,7 @@ export function CtaSection(): JSX.Element {
     <section className="bg-gradient-to-r from-deepRed to-brandBlack py-16 text-white">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="rounded-[28px] border border-white/20 bg-white/5 p-6 backdrop-blur-md sm:p-10">
-          <h2 className="font-heading text-4xl font-semibold sm:text-5xl">Ready to lock in your detail?</h2>
+          <h2 className="font-heading text-3xl font-semibold sm:text-4xl">Ready to lock in your detail?</h2>
           <p className="mt-3 max-w-3xl text-sm text-white/80 sm:text-base">
             Submit your vehicle and service details first, then finish appointment scheduling in Setmore.
           </p>

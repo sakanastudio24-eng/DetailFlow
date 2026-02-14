@@ -10,7 +10,7 @@ export function TestimonialsSection(): JSX.Element {
     <section className="bg-white py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-deepRed">Client Feedback</p>
-        <h2 className="mt-2 font-heading text-4xl font-semibold text-brandBlack sm:text-5xl">What clients say after delivery</h2>
+        <h2 className="mt-2 font-heading text-3xl font-semibold text-brandBlack sm:text-4xl">What clients say after delivery</h2>
 
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
           {testimonials.map((item, index) => (
@@ -20,7 +20,7 @@ export function TestimonialsSection(): JSX.Element {
               style={{ animationDelay: `${index * 140}ms` }}
             >
               <p className="text-base text-brandBlack/80">“{item.quote}”</p>
-              <p className="mt-4 font-heading text-2xl font-semibold text-brandBlack">{item.name}</p>
+              <p className="mt-4 font-heading text-xl font-semibold text-brandBlack">{item.name}</p>
               <p className="mt-1 text-xs font-semibold uppercase tracking-[0.15em] text-waterBlue">{item.service}</p>
             </article>
           ))}

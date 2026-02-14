@@ -57,7 +57,7 @@ function ServiceGrid({ category }: { category: 'package' | 'addon' }): JSX.Eleme
   return (
     <section className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm transition duration-300 hover:shadow-md">
       <div className="mb-4 flex items-end justify-between gap-3">
-        <h2 className="font-heading text-3xl font-semibold text-brandBlack">
+        <h2 className="font-heading text-2xl font-semibold text-brandBlack">
           {category === 'package' ? 'Detail Packages' : 'Enhancement Add-Ons'}
         </h2>
       </div>
@@ -107,7 +107,7 @@ function VehicleSizeSection(): JSX.Element {
 
   return (
     <section className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm transition duration-300 hover:shadow-md">
-      <h2 className="font-heading text-3xl font-semibold text-brandBlack">Select Your Vehicle Size</h2>
+      <h2 className="font-heading text-2xl font-semibold text-brandBlack">Select Your Vehicle Size</h2>
       <p className="mt-2 text-sm text-brandBlack/60">Watch prices update automatically below.</p>
 
       <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -124,7 +124,7 @@ function VehicleSizeSection(): JSX.Element {
                   : 'border-black/10 bg-white hover:border-waterBlue hover:bg-waterBlue/10'
               }`}
             >
-              <p className="font-heading text-3xl font-semibold text-brandBlack">{option.label}</p>
+              <p className="font-heading text-xl font-semibold text-brandBlack">{option.label}</p>
               <p className="mt-1 text-sm text-brandBlack/55">{option.hint}</p>
             </button>
           );
@@ -171,7 +171,7 @@ export default function ServicesPage(): JSX.Element {
       <section className="relative overflow-hidden bg-brandBlack px-4 py-16 text-white sm:px-6">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#8cc0d633,transparent_55%)]" />
         <div className="relative mx-auto max-w-6xl text-center">
-          <h1 className="font-heading text-5xl font-semibold sm:text-7xl">Our Detailing Packages</h1>
+          <h1 className="font-heading text-4xl font-semibold sm:text-5xl">Our Detailing Packages</h1>
           <p className="mx-auto mt-4 max-w-3xl text-base text-white/75 sm:text-xl">
             Choose the perfect service for your vehicle size and condition.
           </p>

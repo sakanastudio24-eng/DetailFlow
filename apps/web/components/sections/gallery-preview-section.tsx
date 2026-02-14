@@ -17,7 +17,7 @@ export function GalleryPreviewSection(): JSX.Element {
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-deepRed">Our Work</p>
-            <h2 className="mt-2 font-heading text-4xl font-semibold text-brandBlack sm:text-5xl">Recent transformations</h2>
+            <h2 className="mt-2 font-heading text-3xl font-semibold text-brandBlack sm:text-4xl">Recent transformations</h2>
           </div>
           <Link href="/gallery" className="text-sm font-semibold text-deepRed transition duration-300 hover:text-brandBlack">
             View full gallery

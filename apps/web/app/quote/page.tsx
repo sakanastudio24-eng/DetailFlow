@@ -39,7 +39,7 @@ export default function QuotePage(): JSX.Element {
       <section className="relative overflow-hidden bg-brandBlack px-4 py-16 text-white sm:px-6">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#8cc0d622,transparent_58%)]" />
         <div className="relative mx-auto max-w-6xl text-center">
-          <h1 className="font-heading text-5xl font-semibold sm:text-7xl">Request a Custom Quote</h1>
+          <h1 className="font-heading text-4xl font-semibold sm:text-5xl">Request a Custom Quote</h1>
           <p className="mx-auto mt-4 max-w-3xl text-base text-white/75 sm:text-xl">
             Tell us about your vehicle and services needed. We will respond with a tailored estimate.
           </p>
@@ -48,7 +48,7 @@ export default function QuotePage(): JSX.Element {
 
       <section className="mx-auto grid max-w-6xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_340px]">
         <form onSubmit={handleSubmit} className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
-          <h2 className="font-heading text-3xl font-semibold text-brandBlack">Personal Information</h2>
+          <h2 className="font-heading text-2xl font-semibold text-brandBlack">Personal Information</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-semibold text-brandBlack/75">
               Full Name *
@@ -108,7 +108,7 @@ export default function QuotePage(): JSX.Element {
             <div className="inline-flex rounded-full bg-waterBlue/15 p-2 text-waterBlue">
               <Phone className="h-5 w-5" />
             </div>
-            <p className="mt-3 font-heading text-3xl font-semibold text-brandBlack">Call us</p>
+            <p className="mt-3 font-heading text-xl font-semibold text-brandBlack">Call us</p>
             <a href="tel:+15551234567" className="mt-1 block text-deepRed">(555) 123-4567</a>
           </article>
 
@@ -116,7 +116,7 @@ export default function QuotePage(): JSX.Element {
             <div className="inline-flex rounded-full bg-waterBlue/15 p-2 text-waterBlue">
               <Mail className="h-5 w-5" />
             </div>
-            <p className="mt-3 font-heading text-3xl font-semibold text-brandBlack">Email</p>
+            <p className="mt-3 font-heading text-xl font-semibold text-brandBlack">Email</p>
             <p className="mt-1 text-brandBlack/75">info@cruznclean.com</p>
           </article>
 
@@ -124,7 +124,7 @@ export default function QuotePage(): JSX.Element {
             <div className="inline-flex rounded-full bg-waterBlue/15 p-2 text-waterBlue">
               <Clock3 className="h-5 w-5" />
             </div>
-            <p className="mt-3 font-heading text-3xl font-semibold text-brandBlack">Business Hours</p>
+            <p className="mt-3 font-heading text-xl font-semibold text-brandBlack">Business Hours</p>
             <p className="mt-1 text-brandBlack/75">Mon-Sat 8AM - 6PM</p>
           </article>
         </aside>

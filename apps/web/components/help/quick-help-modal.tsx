@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CircleHelp, ChevronDown, ChevronUp, Clock3, Droplets, CreditCard, Car } from 'lucide-react';
 
 interface FaqItem {
@@ -46,6 +46,31 @@ export function QuickHelpModal(): JSX.Element {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const faqs = getQuickFaqs();
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    /**
+     * Closes the modal when Escape key is pressed.
+     */
+    function onKeydown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener('keydown', onKeydown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeydown);
+    };
+  }, [open]);
+
   /**
    * Toggles expansion state for one FAQ row.
    */
@@ -65,15 +90,22 @@ export function QuickHelpModal(): JSX.Element {
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4" role="presentation">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl transition-transform duration-300 animate-[fadeUp_0.3s_ease-out]">
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 p-4"
+          role="presentation"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl transition-transform duration-300 animate-[fadeUp_0.25s_ease-out]"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-black/10 px-5 py-4">
               <div className="flex items-center gap-2">
                 <div className="rounded-full bg-waterBlue/20 p-2 text-waterBlue">
                   <CircleHelp className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="font-heading text-2xl font-bold text-brandBlack">Quick Help</h2>
+                  <h2 className="font-heading text-xl font-semibold text-brandBlack sm:text-2xl">Quick Help</h2>
                   <p className="text-sm text-brandBlack/60">Top questions from customers</p>
                 </div>
               </div>
@@ -102,7 +134,7 @@ export function QuickHelpModal(): JSX.Element {
                       <span className="rounded-full bg-waterBlue/20 p-2 text-waterBlue">
                         <Icon className="h-4 w-4" />
                       </span>
-                      <span className="flex-1 font-semibold text-brandBlack">{faq.question}</span>
+                      <span className="flex-1 text-sm font-semibold text-brandBlack">{faq.question}</span>
                       {expanded ? <ChevronUp className="h-4 w-4 text-brandBlack/55" /> : <ChevronDown className="h-4 w-4 text-brandBlack/55" />}
                     </button>
                     {expanded ? <p className="px-4 pb-4 text-sm text-brandBlack/75">{faq.answer}</p> : null}
@@ -112,7 +144,7 @@ export function QuickHelpModal(): JSX.Element {
 
               <div className="rounded-xl border border-waterBlue/40 bg-waterBlue/10 p-4">
                 <p className="text-sm text-brandBlack/75">
-                  Need more details? View the full FAQ page or continue directly to booking.
+                  Need more details? View full FAQ or continue directly to booking.
                 </p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <Link

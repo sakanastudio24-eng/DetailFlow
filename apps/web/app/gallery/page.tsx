@@ -43,7 +43,7 @@ export default function GalleryPage(): JSX.Element {
       <section className="relative overflow-hidden bg-brandBlack px-4 py-16 text-white sm:px-6">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#8cc0d622,transparent_58%)]" />
         <div className="relative mx-auto max-w-6xl text-center">
-          <h1 className="font-heading text-5xl font-semibold sm:text-7xl">Our Work</h1>
+          <h1 className="font-heading text-4xl font-semibold sm:text-5xl">Our Work</h1>
           <p className="mx-auto mt-4 max-w-3xl text-base text-white/75 sm:text-xl">
             Real results from real clients. Every project showcases our precision and care.
           </p>
