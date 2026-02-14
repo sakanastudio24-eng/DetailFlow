@@ -96,6 +96,7 @@ export function SiteHeader(): JSX.Element {
       <div className="mx-auto flex max-w-[1360px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link href="/" className="font-heading text-2xl font-semibold tracking-tight text-brandBlack sm:text-3xl">
           <span>Cruzn</span>
+          <span className="ml-1 text-brandBlack/65">Clean</span>
         </Link>
 
         <nav className="hidden items-center gap-8 lg:flex">
