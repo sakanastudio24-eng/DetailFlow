@@ -61,6 +61,7 @@ export function CarRunnerMiniGame(): JSX.Element {
   const [phase, setPhase] = useState<GamePhase>('idle');
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
+  const [isOpen, setIsOpen] = useState(false);
 
   /**
    * Syncs React game phase into a mutable ref for animation-loop access.
@@ -111,6 +112,23 @@ export function CarRunnerMiniGame(): JSX.Element {
   const startGame = useCallback((): void => {
     resetRun();
     setPhase('running');
+  }, [resetRun]);
+
+  /**
+   * Opens the mini-game panel and starts a fresh run.
+   */
+  const handleOpen = useCallback((): void => {
+    setIsOpen(true);
+    startGame();
+  }, [startGame]);
+
+  /**
+   * Hides the mini-game panel and resets active run state.
+   */
+  const handleClose = useCallback((): void => {
+    setIsOpen(false);
+    setPhase('idle');
+    resetRun();
   }, [resetRun]);
 
   /**
@@ -281,6 +299,10 @@ export function CarRunnerMiniGame(): JSX.Element {
    * Runs the animation loop and binds keyboard controls for the mini-game.
    */
   useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
@@ -325,7 +347,27 @@ export function CarRunnerMiniGame(): JSX.Element {
       window.removeEventListener('keydown', onKeyDown);
       window.cancelAnimationFrame(animationFrame);
     };
-  }, [drawFrame, jump, startGame, stepSimulation]);
+  }, [drawFrame, isOpen, jump, startGame, stepSimulation]);
+
+  if (!isOpen) {
+    return (
+      <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-heading text-base font-semibold text-white">Footer Mini-Game</h3>
+            <p className="mt-1 text-xs text-white/65">Hidden by default. Tap to play Car Runner.</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleOpen}
+            className="rounded-full bg-deepRed px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#5f0810]"
+          >
+            Play Mini-Game
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
@@ -351,6 +393,13 @@ export function CarRunnerMiniGame(): JSX.Element {
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={handleClose}
+          className="rounded-full border border-white/30 px-4 py-2 text-xs font-semibold text-white/85 transition hover:bg-white/10"
+        >
+          Hide
+        </button>
         <button
           type="button"
           onClick={startGame}
