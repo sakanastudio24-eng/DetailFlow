@@ -51,6 +51,17 @@ a {
   }
 }
 
+@media (max-width: 767px) {
+  .dock-shell {
+    max-height: 72vh;
+    overflow-y: auto;
+  }
+
+  .services-bottom-safe {
+    padding-bottom: 14rem;
+  }
+}
+
 @media (min-width: 1024px) {
   .dock-shell {
     position: sticky;
