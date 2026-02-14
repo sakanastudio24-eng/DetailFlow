@@ -375,7 +375,6 @@ def send_booking_transactional_emails(booking_record: dict[str, Any]) -> list[di
     booking_id = str(booking_record.get("bookingId", "unknown"))
     customer = booking_record.get("customer", {})
 
-    owner_enabled = _env_flag("EMAIL_OWNER_ENABLED", default=True)
     customer_enabled = _env_flag("EMAIL_CUSTOMER_ENABLED", default=True)
     customer_requested_email = bool(customer.get("sendEmailConfirmation", False))
 
@@ -383,16 +382,15 @@ def send_booking_transactional_emails(booking_record: dict[str, Any]) -> list[di
 
     if provider != "resend":
         error_summary = f"Unsupported EMAIL_PROVIDER '{provider}'."
-        if owner_enabled:
-            failures.append(
-                _build_failure_payload(
-                    booking_id=booking_id,
-                    recipient_role="owner",
-                    recipient=os.getenv("BOOKING_OWNER_EMAIL", "").strip(),
-                    provider=provider,
-                    error_summary=error_summary,
-                )
+        failures.append(
+            _build_failure_payload(
+                booking_id=booking_id,
+                recipient_role="owner",
+                recipient=os.getenv("BOOKING_OWNER_EMAIL", "").strip(),
+                provider=provider,
+                error_summary=error_summary,
             )
+        )
 
         if customer_enabled and customer_requested_email:
             failures.append(
@@ -407,19 +405,18 @@ def send_booking_transactional_emails(booking_record: dict[str, Any]) -> list[di
 
         return failures
 
-    if owner_enabled:
-        try:
-            send_owner_notification_email(booking_record)
-        except EmailDeliveryError as exc:
-            failures.append(
-                _build_failure_payload(
-                    booking_id=booking_id,
-                    recipient_role="owner",
-                    recipient=os.getenv("BOOKING_OWNER_EMAIL", "").strip(),
-                    provider=provider,
-                    error_summary=str(exc),
-                )
+    try:
+        send_owner_notification_email(booking_record)
+    except EmailDeliveryError as exc:
+        failures.append(
+            _build_failure_payload(
+                booking_id=booking_id,
+                recipient_role="owner",
+                recipient=os.getenv("BOOKING_OWNER_EMAIL", "").strip(),
+                provider=provider,
+                error_summary=str(exc),
             )
+        )
 
     if customer_enabled and customer_requested_email:
         try:
