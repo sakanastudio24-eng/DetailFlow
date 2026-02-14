@@ -7,6 +7,15 @@ Documentation-first rebuild of a car detailing portfolio and booking website.
 - Backend: FastAPI (minimal API)
 - Storage (V0): JSON files (designed for later Supabase migration)
 
+## Email Architecture (Hybrid Model)
+- Trigger logic, preference validation, and failure policy are handled in FastAPI.
+- Delivery provider is Resend.
+- Template styling and copy can be managed in the provider dashboard without code deploys.
+- Booking acceptance is non-blocking for email failures:
+- Booking is saved first.
+- Email send attempts run second.
+- Failures are logged for operational follow-up.
+
 ## Current Routes
 - `/` Home
 - `/services` Multi-vehicle service planner with docking station
@@ -46,4 +55,37 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - `NEXT_PUBLIC_API_BASE_URL` (default: `http://127.0.0.1:8000`)
 - `NEXT_PUBLIC_SETMORE_URL` (default: `https://www.setmore.com`)
 
-See `DEV_GUIDE.md` and `/docs` for architecture and workflow details.
+## Environment Variables (API)
+- `EMAIL_PROVIDER` (default: `resend`)
+- `RESEND_API_KEY` (secret, never commit real values)
+- `BOOKING_OWNER_EMAIL`
+- `EMAIL_FROM`
+- `EMAIL_REPLY_TO` (optional, defaults to `EMAIL_FROM`)
+- `EMAIL_OWNER_ENABLED` (default: `true`)
+- `EMAIL_CUSTOMER_ENABLED` (default: `true`)
+- `RESEND_TEMPLATE_CUSTOMER_CONFIRMATION` (optional)
+- `RESEND_TEMPLATE_OWNER_NOTIFICATION` (optional)
+
+## Operational Behavior
+- `POST /booking-intakes` persists first to `data/bookings.json`.
+- Owner notification is attempted on every booking when enabled.
+- Customer confirmation is attempted only when customer opted into email confirmation and sending is enabled.
+- Email send failures do not fail booking acceptance.
+- Email send failures are logged to `data/email_failures.json` with retry status metadata for manual operations.
+
+## Template Ownership
+- Visual template edits are owned in Resend template editor.
+- Backend passes structured booking variables.
+- If template IDs are not configured, backend uses fallback HTML/text bodies.
+
+## Documentation Index
+- `docs/architecture.md`
+- `docs/booking-flow.md`
+- `docs/email-confirmation-spec.md`
+- `docs/email-api-contract.md`
+- `docs/email-env-matrix.md`
+- `docs/email-ops-runbook.md`
+- `docs/email-testing-checklist.md`
+- `docs/email-rollout-plan.md`
+- `docs/email-troubleshooting.md`
+- `DEV_GUIDE.md`
