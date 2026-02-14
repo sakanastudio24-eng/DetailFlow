@@ -1,6 +1,16 @@
 'use client';
 
-import { Calendar, Check, ShieldCheck, Sparkles, User } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  CarFront,
+  CheckCircle2,
+  Clock3,
+  ShieldCheck,
+  Sparkles,
+  User,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { SiteShell } from '@/components/layout/site-shell';
@@ -16,6 +26,12 @@ interface StepItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
+interface VehicleSizeOption {
+  id: 'small' | 'medium' | 'large';
+  label: string;
+  hint: string;
+}
+
 const INITIAL_FORM: CustomerBookingForm = {
   fullName: '',
   email: '',
@@ -26,7 +42,7 @@ const INITIAL_FORM: CustomerBookingForm = {
 };
 
 /**
- * Returns the three booking step definitions.
+ * Returns the booking step sequence used by the progress header.
  */
 function getBookingSteps(): StepItem[] {
   return [
@@ -37,10 +53,22 @@ function getBookingSteps(): StepItem[] {
 }
 
 /**
- * Returns whether a customer form has required fields completed.
+ * Returns available vehicle sizes shown during booking step one.
  */
-function isCustomerFormValid(form: CustomerBookingForm): boolean {
+function getVehicleSizes(): VehicleSizeOption[] {
+  return [
+    { id: 'small', label: 'Small', hint: 'Sedan / Coupe' },
+    { id: 'medium', label: 'Medium', hint: 'SUV / Crossover' },
+    { id: 'large', label: 'Large', hint: 'Truck / Van' },
+  ];
+}
+
+/**
+ * Validates required step-one booking fields.
+ */
+function isStepOneValid(form: CustomerBookingForm, hasPackage: boolean): boolean {
   return (
+    hasPackage &&
     form.fullName.trim().length >= 2 &&
     form.email.includes('@') &&
     form.phone.trim().length >= 10 &&
@@ -50,7 +78,14 @@ function isCustomerFormValid(form: CustomerBookingForm): boolean {
 }
 
 /**
- * Renders the booking page with a multi-step appointment flow.
+ * Formats numeric totals into display currency strings.
+ */
+function formatCurrency(value: number): string {
+  return `$${value.toFixed(0)}`;
+}
+
+/**
+ * Renders the booking workflow with improved visual hierarchy and flow.
  */
 export default function BookingPage(): JSX.Element {
   const {
@@ -72,28 +107,32 @@ export default function BookingPage(): JSX.Element {
   const [statusMessage, setStatusMessage] = useState('');
 
   const steps = getBookingSteps();
+  const sizes = getVehicleSizes();
   const packageServices = useMemo(() => getPackageServices(), []);
   const addonServices = useMemo(() => getAddonServices(), []);
   const activeVehicle = useMemo(
     () => vehicles.find((vehicle) => vehicle.id === activeVehicleId) ?? vehicles[0],
     [activeVehicleId, vehicles],
   );
-  const activeServiceIds = activeVehicle?.serviceIds ?? [];
-  const selectedPackageId = activeServiceIds.find((serviceId) => serviceId.startsWith('pkg-'));
-  const selectedPackage = selectedPackageId ? packageServices.find((item) => item.id === selectedPackageId) : undefined;
-  const selectedAddons = addonServices.filter((service) => activeServiceIds.includes(service.id));
+
+  const selectedServiceIds = activeVehicle?.serviceIds ?? [];
+  const selectedPackageId = selectedServiceIds.find((serviceId) => serviceId.startsWith('pkg-'));
+  const selectedPackage = selectedPackageId
+    ? packageServices.find((item) => item.id === selectedPackageId)
+    : undefined;
+  const selectedAddons = addonServices.filter((service) => selectedServiceIds.includes(service.id));
   const hasAnyService = vehicles.some((vehicle) => vehicle.serviceIds.length > 0);
-  const canAdvanceFromStepOne = Boolean(activeVehicle) && Boolean(selectedPackageId) && isCustomerFormValid(form);
+  const stepOneValid = isStepOneValid(form, Boolean(selectedPackageId));
 
   /**
-   * Updates a customer form field.
+   * Updates one customer form field while preserving other keys.
    */
   function updateCustomerField<K extends keyof CustomerBookingForm>(key: K, value: CustomerBookingForm[K]): void {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
   /**
-   * Updates one active vehicle profile field.
+   * Updates one active vehicle field during booking.
    */
   function updateActiveVehicleField(field: 'make' | 'model' | 'year' | 'color', value: string): void {
     if (!activeVehicle) {
@@ -104,11 +143,11 @@ export default function BookingPage(): JSX.Element {
   }
 
   /**
-   * Moves to the next booking step when validation passes.
+   * Advances to the next step when current-step validation passes.
    */
-  function goToNextStep(): void {
-    if (step === 1 && !canAdvanceFromStepOne) {
-      setStatusMessage('Complete details and select a package before continuing.');
+  function goNext(): void {
+    if (step === 1 && !stepOneValid) {
+      setStatusMessage('Complete required details and select one package to continue.');
       return;
     }
 
@@ -117,9 +156,9 @@ export default function BookingPage(): JSX.Element {
   }
 
   /**
-   * Moves to the previous step when available.
+   * Moves back to the previous booking step.
    */
-  function goToPreviousStep(): void {
+  function goBack(): void {
     setStatusMessage('');
     setStep((current) => Math.max(current - 1, 1));
   }
@@ -127,22 +166,22 @@ export default function BookingPage(): JSX.Element {
   /**
    * Submits booking intake and redirects customer to Setmore.
    */
-  async function submitBooking(): Promise<void> {
-    if (!canAdvanceFromStepOne || !hasAnyService) {
-      setStatusMessage('Please complete booking details and service selections first.');
+  async function handleSubmitBooking(): Promise<void> {
+    if (!stepOneValid || !hasAnyService) {
+      setStatusMessage('Please complete details and select services before submitting.');
       return;
     }
 
     setSubmitting(true);
-    setStatusMessage('Submitting your intake...');
+    setStatusMessage('Submitting your booking intake...');
 
     try {
       await submitBookingIntake({ customer: form, vehicles });
-      setStatusMessage('Saved. Redirecting to Setmore...');
+      setStatusMessage('Intake saved. Redirecting to Setmore...');
       clearAll();
       window.location.href = getSetmoreUrl();
     } catch {
-      setStatusMessage('Submission failed. Please retry in a moment.');
+      setStatusMessage('Submission failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -150,18 +189,21 @@ export default function BookingPage(): JSX.Element {
 
   return (
     <SiteShell>
-      <section className="relative overflow-hidden bg-brandBlack px-4 py-16 text-white sm:px-6">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#8cc0d633,transparent_55%)]" />
+      <section className="relative overflow-hidden bg-brandBlack px-4 py-14 text-white sm:px-6">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#8cc0d636,transparent_60%)]" />
         <div className="relative mx-auto max-w-6xl">
-          <div className="rounded-[32px] border border-white/15 bg-white/10 px-6 py-8 backdrop-blur-md sm:px-10 sm:py-10">
+          <div className="rounded-[30px] border border-white/15 bg-white/10 px-5 py-7 backdrop-blur-md sm:px-10 sm:py-10">
             <h1 className="text-center font-heading text-4xl font-semibold sm:text-5xl">Book Your Appointment</h1>
-            <p className="mt-3 text-center text-base text-white/80 sm:text-xl">Three simple steps to a pristine vehicle.</p>
+            <p className="mt-2 text-center text-sm text-white/75 sm:text-base">Three simple steps to a pristine vehicle.</p>
 
-            <div className="mx-auto mt-8 max-w-4xl">
+            <div className="mx-auto mt-7 max-w-4xl">
               <div className="h-2 rounded-full bg-black/30">
-                <div className="h-2 rounded-full bg-deepRed transition-all duration-500" style={{ width: `${(step / steps.length) * 100}%` }} />
+                <div
+                  className="h-2 rounded-full bg-deepRed transition-all duration-500"
+                  style={{ width: `${(step / steps.length) * 100}%` }}
+                />
               </div>
-              <div className="mt-6 grid grid-cols-3 gap-3">
+              <div className="mt-5 grid grid-cols-3 gap-3">
                 {steps.map((item) => {
                   const Icon = item.icon;
                   const active = item.id === step;
@@ -170,17 +212,17 @@ export default function BookingPage(): JSX.Element {
                   return (
                     <div key={item.id} className="flex flex-col items-center gap-2 text-center">
                       <div
-                        className={`flex h-11 w-11 items-center justify-center rounded-full border transition duration-300 ${
+                        className={`flex h-10 w-10 items-center justify-center rounded-full border transition duration-300 ${
                           complete
                             ? 'border-green-300 bg-green-500 text-white'
                             : active
                             ? 'border-waterBlue bg-waterBlue text-brandBlack'
-                            : 'border-white/30 bg-white/5 text-white/65'
+                            : 'border-white/30 bg-white/5 text-white/70'
                         }`}
                       >
-                        {complete ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                        {complete ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
                       </div>
-                      <p className={`text-sm font-semibold ${active ? 'text-white' : 'text-white/65'}`}>{item.title}</p>
+                      <p className={`text-xs sm:text-sm ${active ? 'text-white' : 'text-white/70'}`}>{item.title}</p>
                     </div>
                   );
                 })}
@@ -201,7 +243,9 @@ export default function BookingPage(): JSX.Element {
                   type="button"
                   onClick={() => setActiveVehicleId(vehicle.id)}
                   className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                    active ? 'border-deepRed bg-deepRed text-white' : 'border-black/15 text-brandBlack hover:border-waterBlue'
+                    active
+                      ? 'border-deepRed bg-deepRed text-white'
+                      : 'border-black/15 text-brandBlack hover:border-waterBlue'
                   }`}
                 >
                   {getVehicleDisplayName(vehicle)}
@@ -214,7 +258,7 @@ export default function BookingPage(): JSX.Element {
             <>
               <section>
                 <h2 className="font-heading text-2xl font-semibold text-brandBlack">Your Details</h2>
-                <p className="mt-1 text-sm text-brandBlack/65">Select package and vehicle profile to start booking.</p>
+                <p className="mt-1 text-sm text-brandBlack/65">Choose a package, vehicle size, and contact details.</p>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   {packageServices.map((service) => {
@@ -227,12 +271,36 @@ export default function BookingPage(): JSX.Element {
                         className={`rounded-xl border p-4 text-left transition duration-300 ${
                           selected
                             ? 'border-deepRed bg-deepRed/10 shadow-md'
-                            : 'border-black/10 bg-white hover:-translate-y-0.5 hover:border-waterBlue hover:bg-waterBlue/10'
+                            : 'border-black/10 bg-white hover:border-waterBlue hover:bg-waterBlue/10'
                         }`}
                       >
-                        <p className="font-heading text-xl font-bold text-brandBlack">{service.name}</p>
+                        <p className="font-heading text-xl font-semibold text-brandBlack">{service.name}</p>
                         <p className="mt-1 text-xs text-brandBlack/60">{service.description}</p>
-                        <p className="mt-3 font-heading text-2xl font-extrabold text-deepRed">${service.price}</p>
+                        <p className="mt-3 font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(service.price)}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-sm font-semibold text-brandBlack/80">Vehicle Size</h3>
+                <div className="mt-2 grid gap-3 sm:grid-cols-3">
+                  {sizes.map((size) => {
+                    const selected = activeVehicle?.size === size.id;
+                    return (
+                      <button
+                        key={size.id}
+                        type="button"
+                        onClick={() => activeVehicle && updateVehicle(activeVehicle.id, { size: size.id })}
+                        className={`rounded-xl border px-4 py-3 text-left transition ${
+                          selected
+                            ? 'border-deepRed bg-deepRed/10'
+                            : 'border-black/10 bg-white hover:border-waterBlue hover:bg-waterBlue/10'
+                        }`}
+                      >
+                        <p className="font-heading text-lg font-semibold text-brandBlack">{size.label}</p>
+                        <p className="text-xs text-brandBlack/55">{size.hint}</p>
                       </button>
                     );
                   })}
@@ -333,11 +401,11 @@ export default function BookingPage(): JSX.Element {
           {step === 2 ? (
             <section>
               <h2 className="font-heading text-2xl font-semibold text-brandBlack">Enhancements</h2>
-              <p className="mt-1 text-sm text-brandBlack/65">Optional services to maximize finish quality.</p>
+              <p className="mt-1 text-sm text-brandBlack/65">Select optional add-ons for this vehicle.</p>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {addonServices.map((service) => {
-                  const selected = activeServiceIds.includes(service.id);
+                  const selected = selectedServiceIds.includes(service.id);
 
                   return (
                     <button
@@ -347,12 +415,12 @@ export default function BookingPage(): JSX.Element {
                       className={`rounded-xl border p-4 text-left transition duration-300 ${
                         selected
                           ? 'border-deepRed bg-deepRed/10 shadow-md'
-                          : 'border-black/10 bg-white hover:-translate-y-0.5 hover:border-waterBlue hover:bg-waterBlue/10'
+                          : 'border-black/10 bg-white hover:border-waterBlue hover:bg-waterBlue/10'
                       }`}
                     >
-                      <p className="font-heading text-xl font-bold text-brandBlack">{service.name}</p>
+                      <p className="font-heading text-xl font-semibold text-brandBlack">{service.name}</p>
                       <p className="mt-1 text-xs text-brandBlack/60">{service.description}</p>
-                      <p className="mt-3 font-heading text-2xl font-extrabold text-deepRed">${service.price}</p>
+                      <p className="mt-3 font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(service.price)}</p>
                     </button>
                   );
                 })}
@@ -364,7 +432,7 @@ export default function BookingPage(): JSX.Element {
                   value={form.notes}
                   onChange={(event) => updateCustomerField('notes', event.target.value)}
                   className="mt-1 min-h-24 w-full rounded-lg border border-black/15 px-3 py-2"
-                  placeholder="Gate code, preferred access, priority concerns..."
+                  placeholder="Gate code, preferred access, or condition notes..."
                 />
               </label>
             </section>
@@ -373,23 +441,22 @@ export default function BookingPage(): JSX.Element {
           {step === 3 ? (
             <section>
               <h2 className="font-heading text-2xl font-semibold text-brandBlack">Schedule</h2>
-              <p className="mt-1 text-sm text-brandBlack/65">Confirm your intake and continue to Setmore for time-slot selection.</p>
+              <p className="mt-1 text-sm text-brandBlack/65">Review your selections, then continue to Setmore.</p>
 
               <div className="mt-4 rounded-xl border border-black/10 bg-neutralGray p-4">
-                <div className="aspect-[16/9] w-full rounded-xl border border-black/10 bg-white p-4">
-                  <p className="text-sm text-brandBlack/70">
-                    After clicking submit, you will be redirected to Setmore to choose your final appointment date and time.
-                  </p>
-                  <a
-                    href={getSetmoreUrl()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 inline-flex items-center rounded-full border border-deepRed px-4 py-2 text-sm font-semibold text-deepRed transition hover:bg-deepRed hover:text-white"
-                  >
-                    Preview Setmore Link
-                  </a>
+                <div className="aspect-[16/9] w-full overflow-hidden rounded-xl border border-black/10 bg-white">
+                  <iframe
+                    title="Setmore Booking Preview"
+                    src={getSetmoreUrl()}
+                    className="h-full w-full border-0"
+                  />
                 </div>
               </div>
+
+              <ul className="mt-4 space-y-2 text-sm text-brandBlack/75">
+                <li className="inline-flex items-center gap-2"><Clock3 className="h-4 w-4 text-waterBlue" /> Instant confirmation after slot selection.</li>
+                <li className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-waterBlue" /> Intake details are saved before redirect.</li>
+              </ul>
             </section>
           ) : null}
 
@@ -397,29 +464,29 @@ export default function BookingPage(): JSX.Element {
             {step > 1 ? (
               <button
                 type="button"
-                onClick={goToPreviousStep}
-                className="rounded-full border border-waterBlue px-4 py-2 text-sm font-semibold text-waterBlue transition hover:bg-waterBlue/10"
+                onClick={goBack}
+                className="inline-flex items-center gap-2 rounded-full border border-waterBlue px-4 py-2 text-sm font-semibold text-waterBlue transition hover:bg-waterBlue/10"
               >
-                Back
+                <ArrowLeft className="h-4 w-4" /> Back
               </button>
             ) : <span />}
 
             {step < 3 ? (
               <button
                 type="button"
-                onClick={goToNextStep}
-                className="rounded-full bg-deepRed px-5 py-2 text-sm font-semibold text-white transition hover:bg-brandBlack"
+                onClick={goNext}
+                className="inline-flex items-center gap-2 rounded-full bg-deepRed px-5 py-2 text-sm font-semibold text-white transition hover:bg-brandBlack"
               >
-                Continue
+                Continue <ArrowRight className="h-4 w-4" />
               </button>
             ) : (
               <button
                 type="button"
-                onClick={() => void submitBooking()}
+                onClick={() => void handleSubmitBooking()}
                 disabled={submitting}
-                className="rounded-full bg-deepRed px-5 py-2 text-sm font-semibold text-white transition hover:bg-brandBlack disabled:opacity-65"
+                className="inline-flex items-center gap-2 rounded-full bg-deepRed px-5 py-2 text-sm font-semibold text-white transition hover:bg-brandBlack disabled:opacity-65"
               >
-                {submitting ? 'Submitting...' : 'Submit Intake and Continue'}
+                {submitting ? 'Submitting...' : 'Submit and Continue'}
               </button>
             )}
           </div>
@@ -429,19 +496,24 @@ export default function BookingPage(): JSX.Element {
 
         <aside className="sticky top-28 h-fit rounded-2xl border border-black/10 bg-white shadow-sm">
           <div className="rounded-t-2xl bg-gradient-to-r from-brandBlack to-[#1a1514] px-4 py-3 text-white">
-            <h2 className="inline-flex items-center gap-2 font-heading text-2xl font-semibold">
+            <h2 className="inline-flex items-center gap-2 font-heading text-xl font-semibold">
               <ShieldCheck className="h-5 w-5 text-waterBlue" /> Your Selection
             </h2>
           </div>
           <div className="space-y-3 p-4">
+            <article className="rounded-xl border border-black/10 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brandBlack/55">Active Vehicle</p>
+              <p className="mt-1 inline-flex items-center gap-2 font-semibold text-brandBlack">
+                <CarFront className="h-4 w-4 text-waterBlue" />
+                {activeVehicle ? getVehicleDisplayName(activeVehicle) : 'Vehicle'}
+              </p>
+            </article>
+
             {selectedPackage ? (
               <article className="rounded-xl border border-black/10 p-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brandBlack/55">Package</p>
-                <p className="mt-1 font-heading text-xl font-bold text-brandBlack">{selectedPackage.name}</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs text-brandBlack/60">{activeVehicle ? getVehicleDisplayName(activeVehicle) : 'Vehicle'}</span>
-                  <span className="font-heading text-2xl font-extrabold text-deepRed">${selectedPackage.price}</span>
-                </div>
+                <p className="mt-1 font-heading text-lg font-semibold text-brandBlack">{selectedPackage.name}</p>
+                <p className="mt-1 text-sm font-semibold text-deepRed">{formatCurrency(selectedPackage.price)}</p>
               </article>
             ) : (
               <p className="rounded-xl bg-neutralGray p-3 text-sm text-brandBlack/70">Select a package to continue.</p>
@@ -454,7 +526,7 @@ export default function BookingPage(): JSX.Element {
                   {selectedAddons.map((service) => (
                     <li key={service.id} className="flex items-center justify-between text-xs">
                       <span className="text-brandBlack/75">{service.name}</span>
-                      <span className="font-semibold text-brandBlack">${service.price}</span>
+                      <span className="font-semibold text-brandBlack">{formatCurrency(service.price)}</span>
                     </li>
                   ))}
                 </ul>
@@ -465,8 +537,10 @@ export default function BookingPage(): JSX.Element {
 
             <div className="rounded-xl bg-neutralGray p-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-brandBlack">Subtotal</span>
-                <span className="font-heading text-2xl font-extrabold text-deepRed">${activeVehicle ? getVehicleTotal(activeVehicle.id) : 0}</span>
+                <span className="text-sm font-semibold text-brandBlack">Vehicle Subtotal</span>
+                <span className="font-heading text-2xl font-extrabold text-deepRed">
+                  {formatCurrency(activeVehicle ? getVehicleTotal(activeVehicle.id) : 0)}
+                </span>
               </div>
               <p className="mt-1 text-xs text-brandBlack/60">Final price confirmed on-site</p>
             </div>
@@ -483,7 +557,7 @@ export default function BookingPage(): JSX.Element {
 
             <div className="border-t border-black/10 pt-3 text-right">
               <p className="text-xs text-brandBlack/60">All vehicles total</p>
-              <p className="font-heading text-2xl font-extrabold text-deepRed">${getGrandTotal()}</p>
+              <p className="font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(getGrandTotal())}</p>
             </div>
           </div>
         </aside>
