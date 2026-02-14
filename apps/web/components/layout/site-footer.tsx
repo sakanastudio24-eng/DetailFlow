@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { CarRunnerMiniGame } from '@/components/layout/car-runner-mini-game';
+
 /**
  * Renders a polished footer with clear navigation and contact details.
  */
@@ -42,6 +44,10 @@ export function SiteFooter(): JSX.Element {
             <p className="mt-1 text-sm text-white/80">Mon-Sat 8:00AM - 6:00PM</p>
           </div>
         </div>
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 pb-10 sm:px-6">
+        <CarRunnerMiniGame />
       </div>
 
       <div className="border-t border-white/10">
