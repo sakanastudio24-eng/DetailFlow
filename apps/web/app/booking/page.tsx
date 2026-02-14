@@ -7,15 +7,17 @@ import {
   CarFront,
   CheckCircle2,
   Clock3,
+  Plus,
   ShieldCheck,
   Sparkles,
+  Trash2,
   User,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ComponentType } from 'react';
 
 import { SiteShell } from '@/components/layout/site-shell';
 import { useBooking } from '@/components/providers/booking-provider';
-import type { CustomerBookingForm } from '@/lib/booking-types';
+import type { CustomerBookingForm, VehicleProfile } from '@/lib/booking-types';
 import { getSetmoreUrl, submitBookingIntake } from '@/lib/api-client';
 import { getAddonServices, getPackageServices } from '@/lib/services-catalog';
 import { getVehicleDisplayName } from '@/lib/vehicle-utils';
@@ -23,7 +25,7 @@ import { getVehicleDisplayName } from '@/lib/vehicle-utils';
 interface StepItem {
   id: number;
   title: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
 }
 
 interface VehicleSizeOption {
@@ -31,6 +33,8 @@ interface VehicleSizeOption {
   label: string;
   hint: string;
 }
+
+const MAX_VEHICLES = 4;
 
 const INITIAL_FORM: CustomerBookingForm = {
   fullName: '',
@@ -85,6 +89,14 @@ function formatCurrency(value: number): string {
 }
 
 /**
+ * Builds a compact vehicle label for dock cards.
+ */
+function getVehicleHint(vehicle: VehicleProfile): string {
+  const parts = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean);
+  return parts.length > 0 ? parts.join(' ') : 'No vehicle details yet';
+}
+
+/**
  * Renders the booking workflow with improved visual hierarchy and flow.
  */
 export default function BookingPage(): JSX.Element {
@@ -92,6 +104,8 @@ export default function BookingPage(): JSX.Element {
     vehicles,
     activeVehicleId,
     setActiveVehicleId,
+    addVehicle,
+    removeVehicle,
     updateVehicle,
     setVehiclePackage,
     toggleServiceForVehicle,
@@ -121,6 +135,10 @@ export default function BookingPage(): JSX.Element {
     ? packageServices.find((item) => item.id === selectedPackageId)
     : undefined;
   const selectedAddons = addonServices.filter((service) => selectedServiceIds.includes(service.id));
+  const selectedVehicles = useMemo(
+    () => vehicles.filter((vehicle) => getVehicleServices(vehicle.id).length > 0),
+    [getVehicleServices, vehicles],
+  );
   const hasAnyService = vehicles.some((vehicle) => vehicle.serviceIds.length > 0);
   const stepOneValid = isStepOneValid(form, Boolean(selectedPackageId));
 
@@ -140,6 +158,27 @@ export default function BookingPage(): JSX.Element {
     }
 
     updateVehicle(activeVehicle.id, { [field]: value });
+  }
+
+  /**
+   * Adds another vehicle to the booking dock up to configured max.
+   */
+  function handleAddVehicle(): void {
+    if (vehicles.length >= MAX_VEHICLES) {
+      setStatusMessage(`Up to ${MAX_VEHICLES} vehicles can be booked in one request.`);
+      return;
+    }
+
+    addVehicle();
+    setStatusMessage('');
+  }
+
+  /**
+   * Removes one vehicle from the booking dock.
+   */
+  function handleRemoveVehicle(vehicleId: string): void {
+    removeVehicle(vehicleId);
+    setStatusMessage('');
   }
 
   /**
@@ -189,44 +228,42 @@ export default function BookingPage(): JSX.Element {
 
   return (
     <SiteShell>
-      <section className="relative overflow-hidden bg-brandBlack px-4 py-14 text-white sm:px-6">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#8cc0d636,transparent_60%)]" />
-        <div className="relative mx-auto max-w-6xl">
-          <div className="rounded-[30px] border border-white/15 bg-white/10 px-5 py-7 backdrop-blur-md sm:px-10 sm:py-10">
-            <h1 className="text-center font-heading text-4xl font-semibold sm:text-5xl">Book Your Appointment</h1>
-            <p className="mt-2 text-center text-sm text-white/75 sm:text-base">Three simple steps to a pristine vehicle.</p>
+      <section className="relative overflow-hidden bg-brandBlack px-4 py-12 text-white sm:px-6 sm:py-14">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#8cc0d636,transparent_65%)]" />
+        <div className="relative mx-auto max-w-6xl rounded-[30px] border border-white/15 bg-white/10 px-5 py-7 backdrop-blur-md sm:px-10 sm:py-9">
+          <h1 className="text-center font-heading text-3xl font-semibold sm:text-5xl">Book Your Appointment</h1>
+          <p className="mt-2 text-center text-sm text-white/75 sm:text-base">Three simple steps to a pristine vehicle.</p>
 
-            <div className="mx-auto mt-7 max-w-4xl">
-              <div className="h-2 rounded-full bg-black/30">
-                <div
-                  className="h-2 rounded-full bg-deepRed transition-all duration-500"
-                  style={{ width: `${(step / steps.length) * 100}%` }}
-                />
-              </div>
-              <div className="mt-5 grid grid-cols-3 gap-3">
-                {steps.map((item) => {
-                  const Icon = item.icon;
-                  const active = item.id === step;
-                  const complete = item.id < step;
+          <div className="mx-auto mt-6 max-w-4xl">
+            <div className="h-2 rounded-full bg-black/30">
+              <div
+                className="h-2 rounded-full bg-deepRed transition-all duration-500"
+                style={{ width: `${(step / steps.length) * 100}%` }}
+              />
+            </div>
+            <div className="mt-5 grid grid-cols-3 gap-3">
+              {steps.map((item) => {
+                const Icon = item.icon;
+                const active = item.id === step;
+                const complete = item.id < step;
 
-                  return (
-                    <div key={item.id} className="flex flex-col items-center gap-2 text-center">
-                      <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-full border transition duration-300 ${
-                          complete
-                            ? 'border-green-300 bg-green-500 text-white'
-                            : active
+                return (
+                  <div key={item.id} className="flex flex-col items-center gap-2 text-center">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-full border transition duration-300 ${
+                        complete
+                          ? 'border-green-300 bg-green-500 text-white'
+                          : active
                             ? 'border-waterBlue bg-waterBlue text-brandBlack'
                             : 'border-white/30 bg-white/5 text-white/70'
-                        }`}
-                      >
-                        {complete ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
-                      </div>
-                      <p className={`text-xs sm:text-sm ${active ? 'text-white' : 'text-white/70'}`}>{item.title}</p>
+                      }`}
+                    >
+                      {complete ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
                     </div>
-                  );
-                })}
-              </div>
+                    <p className={`text-xs sm:text-sm ${active ? 'text-white' : 'text-white/70'}`}>{item.title}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -234,56 +271,91 @@ export default function BookingPage(): JSX.Element {
 
       <section className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-5 rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2">
-            {vehicles.map((vehicle) => {
-              const active = vehicle.id === activeVehicleId;
-              return (
-                <button
-                  key={vehicle.id}
-                  type="button"
-                  onClick={() => setActiveVehicleId(vehicle.id)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                    active
-                      ? 'border-deepRed bg-deepRed text-white'
-                      : 'border-black/15 text-brandBlack hover:border-waterBlue'
-                  }`}
-                >
-                  {getVehicleDisplayName(vehicle)}
-                </button>
-              );
-            })}
+          <div className="rounded-2xl border border-black/10 bg-neutralGray/60 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brandBlack/60">Vehicle Deck</p>
+                <p className="text-sm text-brandBlack/70">Manage multiple cars in one booking.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddVehicle}
+                className="inline-flex items-center gap-2 rounded-full border border-waterBlue bg-white px-3 py-1.5 text-xs font-semibold text-waterBlue transition duration-300 hover:bg-waterBlue/10"
+              >
+                <Plus className="h-4 w-4" /> Add Vehicle
+              </button>
+            </div>
+
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {vehicles.map((vehicle) => {
+                const active = vehicle.id === activeVehicleId;
+                return (
+                  <article
+                    key={vehicle.id}
+                    className={`rounded-xl border bg-white p-3 transition-all duration-300 ${
+                      active ? 'border-deepRed shadow-sm' : 'border-black/10 hover:border-waterBlue'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setActiveVehicleId(vehicle.id)}
+                        className="text-left"
+                      >
+                        <p className="font-semibold text-brandBlack">{getVehicleDisplayName(vehicle)}</p>
+                        <p className="text-xs text-brandBlack/60">{getVehicleHint(vehicle)}</p>
+                      </button>
+                      {vehicles.length > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVehicle(vehicle.id)}
+                          className="rounded-full p-1 text-brandBlack/55 transition hover:bg-neutralGray hover:text-deepRed"
+                          aria-label={`Remove ${getVehicleDisplayName(vehicle)}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      ) : null}
+                    </div>
+                    <div className="mt-2 flex items-center justify-between border-t border-black/10 pt-2 text-xs">
+                      <span className="text-brandBlack/65">{vehicle.serviceIds.length} selections</span>
+                      <span className="font-semibold text-deepRed">{formatCurrency(getVehicleTotal(vehicle.id))}</span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
 
           {step === 1 ? (
-            <>
-              <section>
+            <section className="space-y-4 rounded-2xl border border-black/10 p-4 transition-all duration-300">
+              <div>
                 <h2 className="font-heading text-2xl font-semibold text-brandBlack">Your Details</h2>
-                <p className="mt-1 text-sm text-brandBlack/65">Choose a package, vehicle size, and contact details.</p>
+                <p className="mt-1 text-sm text-brandBlack/65">Pick one package, set vehicle size, and complete contact info.</p>
+              </div>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  {packageServices.map((service) => {
-                    const selected = selectedPackageId === service.id;
-                    return (
-                      <button
-                        key={service.id}
-                        type="button"
-                        onClick={() => setVehiclePackage(activeVehicleId, service.id)}
-                        className={`rounded-xl border p-4 text-left transition duration-300 ${
-                          selected
-                            ? 'border-deepRed bg-deepRed/10 shadow-md'
-                            : 'border-black/10 bg-white hover:border-waterBlue hover:bg-waterBlue/10'
-                        }`}
-                      >
-                        <p className="font-heading text-xl font-semibold text-brandBlack">{service.name}</p>
-                        <p className="mt-1 text-xs text-brandBlack/60">{service.description}</p>
-                        <p className="mt-3 font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(service.price)}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {packageServices.map((service) => {
+                  const selected = selectedPackageId === service.id;
+                  return (
+                    <button
+                      key={service.id}
+                      type="button"
+                      onClick={() => setVehiclePackage(activeVehicleId, service.id)}
+                      className={`rounded-xl border p-4 text-left transition-all duration-300 hover:-translate-y-0.5 ${
+                        selected
+                          ? 'border-deepRed bg-deepRed/10 shadow-md'
+                          : 'border-black/10 bg-white hover:border-waterBlue hover:bg-waterBlue/10'
+                      }`}
+                    >
+                      <p className="font-heading text-lg font-semibold text-brandBlack">{service.name}</p>
+                      <p className="mt-1 text-xs text-brandBlack/60">{service.description}</p>
+                      <p className="mt-3 font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(service.price)}</p>
+                    </button>
+                  );
+                })}
+              </div>
 
-              <section>
+              <div>
                 <h3 className="text-sm font-semibold text-brandBlack/80">Vehicle Size</h3>
                 <div className="mt-2 grid gap-3 sm:grid-cols-3">
                   {sizes.map((size) => {
@@ -293,27 +365,27 @@ export default function BookingPage(): JSX.Element {
                         key={size.id}
                         type="button"
                         onClick={() => activeVehicle && updateVehicle(activeVehicle.id, { size: size.id })}
-                        className={`rounded-xl border px-4 py-3 text-left transition ${
+                        className={`rounded-xl border px-4 py-3 text-left transition-all duration-300 ${
                           selected
                             ? 'border-deepRed bg-deepRed/10'
                             : 'border-black/10 bg-white hover:border-waterBlue hover:bg-waterBlue/10'
                         }`}
                       >
-                        <p className="font-heading text-lg font-semibold text-brandBlack">{size.label}</p>
+                        <p className="font-heading text-base font-semibold text-brandBlack">{size.label}</p>
                         <p className="text-xs text-brandBlack/55">{size.hint}</p>
                       </button>
                     );
                   })}
                 </div>
-              </section>
+              </div>
 
-              <section className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-sm font-semibold text-brandBlack/75">
                   Full Name *
                   <input
                     value={form.fullName}
                     onChange={(event) => updateCustomerField('fullName', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
                     placeholder="John Doe"
                   />
                 </label>
@@ -323,7 +395,7 @@ export default function BookingPage(): JSX.Element {
                     type="email"
                     value={form.email}
                     onChange={(event) => updateCustomerField('email', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
                     placeholder="john@example.com"
                   />
                 </label>
@@ -332,7 +404,7 @@ export default function BookingPage(): JSX.Element {
                   <input
                     value={form.phone}
                     onChange={(event) => updateCustomerField('phone', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
                     placeholder="(555) 123-4567"
                   />
                 </label>
@@ -341,19 +413,19 @@ export default function BookingPage(): JSX.Element {
                   <input
                     value={form.zipCode}
                     onChange={(event) => updateCustomerField('zipCode', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
                     placeholder="90210"
                   />
                 </label>
-              </section>
+              </div>
 
-              <section className="grid gap-3 sm:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-4">
                 <label className="text-sm font-semibold text-brandBlack/75">
                   Year
                   <input
                     value={activeVehicle?.year ?? ''}
                     onChange={(event) => updateActiveVehicleField('year', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
                     placeholder="2020"
                   />
                 </label>
@@ -362,7 +434,7 @@ export default function BookingPage(): JSX.Element {
                   <input
                     value={activeVehicle?.make ?? ''}
                     onChange={(event) => updateActiveVehicleField('make', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
                     placeholder="Toyota"
                   />
                 </label>
@@ -371,7 +443,7 @@ export default function BookingPage(): JSX.Element {
                   <input
                     value={activeVehicle?.model ?? ''}
                     onChange={(event) => updateActiveVehicleField('model', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
                     placeholder="Camry"
                   />
                 </label>
@@ -380,11 +452,11 @@ export default function BookingPage(): JSX.Element {
                   <input
                     value={activeVehicle?.color ?? ''}
                     onChange={(event) => updateActiveVehicleField('color', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
                     placeholder="Silver"
                   />
                 </label>
-              </section>
+              </div>
 
               <label className="flex items-start gap-2 rounded-xl border border-waterBlue/35 bg-waterBlue/10 px-4 py-3 text-sm text-brandBlack/80">
                 <input
@@ -395,15 +467,17 @@ export default function BookingPage(): JSX.Element {
                 />
                 I agree to booking terms and consent to contact for scheduling updates.
               </label>
-            </>
+            </section>
           ) : null}
 
           {step === 2 ? (
-            <section>
-              <h2 className="font-heading text-2xl font-semibold text-brandBlack">Enhancements</h2>
-              <p className="mt-1 text-sm text-brandBlack/65">Select optional add-ons for this vehicle.</p>
+            <section className="space-y-4 rounded-2xl border border-black/10 p-4 transition-all duration-300">
+              <div>
+                <h2 className="font-heading text-2xl font-semibold text-brandBlack">Enhancements</h2>
+                <p className="mt-1 text-sm text-brandBlack/65">Select optional add-ons for {activeVehicle ? getVehicleDisplayName(activeVehicle) : 'this vehicle'}.</p>
+              </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {addonServices.map((service) => {
                   const selected = selectedServiceIds.includes(service.id);
 
@@ -412,26 +486,30 @@ export default function BookingPage(): JSX.Element {
                       key={service.id}
                       type="button"
                       onClick={() => toggleServiceForVehicle(activeVehicleId, service)}
-                      className={`rounded-xl border p-4 text-left transition duration-300 ${
+                      className={`rounded-xl border p-4 text-left transition-all duration-300 hover:-translate-y-0.5 ${
                         selected
                           ? 'border-deepRed bg-deepRed/10 shadow-md'
                           : 'border-black/10 bg-white hover:border-waterBlue hover:bg-waterBlue/10'
                       }`}
                     >
-                      <p className="font-heading text-xl font-semibold text-brandBlack">{service.name}</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-heading text-lg font-semibold text-brandBlack">{service.name}</p>
+                        {selected ? <CheckCircle2 className="h-5 w-5 text-deepRed" /> : null}
+                      </div>
                       <p className="mt-1 text-xs text-brandBlack/60">{service.description}</p>
-                      <p className="mt-3 font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(service.price)}</p>
+                      <p className="mt-3 text-sm text-brandBlack/70">{service.duration}</p>
+                      <p className="mt-1 font-heading text-2xl font-extrabold text-deepRed">{formatCurrency(service.price)}</p>
                     </button>
                   );
                 })}
               </div>
 
-              <label className="mt-4 block text-sm font-semibold text-brandBlack/75">
+              <label className="block text-sm font-semibold text-brandBlack/75">
                 Special Notes
                 <textarea
                   value={form.notes}
                   onChange={(event) => updateCustomerField('notes', event.target.value)}
-                  className="mt-1 min-h-24 w-full rounded-lg border border-black/15 px-3 py-2"
+                  className="mt-1 min-h-24 w-full rounded-lg border border-black/15 px-3 py-2 transition duration-300 focus:border-waterBlue focus:outline-none"
                   placeholder="Gate code, preferred access, or condition notes..."
                 />
               </label>
@@ -439,21 +517,27 @@ export default function BookingPage(): JSX.Element {
           ) : null}
 
           {step === 3 ? (
-            <section>
-              <h2 className="font-heading text-2xl font-semibold text-brandBlack">Schedule</h2>
-              <p className="mt-1 text-sm text-brandBlack/65">Review your selections, then continue to Setmore.</p>
-
-              <div className="mt-4 rounded-xl border border-black/10 bg-neutralGray p-4">
-                <div className="aspect-[16/9] w-full overflow-hidden rounded-xl border border-black/10 bg-white">
-                  <iframe
-                    title="Setmore Booking Preview"
-                    src={getSetmoreUrl()}
-                    className="h-full w-full border-0"
-                  />
-                </div>
+            <section className="space-y-4 rounded-2xl border border-black/10 p-4 transition-all duration-300">
+              <div>
+                <h2 className="font-heading text-2xl font-semibold text-brandBlack">Schedule</h2>
+                <p className="mt-1 text-sm text-brandBlack/65">Submit your details, then choose your appointment on Setmore.</p>
               </div>
 
-              <ul className="mt-4 space-y-2 text-sm text-brandBlack/75">
+              <div className="rounded-xl border border-black/10 bg-neutralGray p-4">
+                <p className="text-sm text-brandBlack/75">
+                  We pre-save your intake first so your booking request stays attached to your service selections.
+                </p>
+                <a
+                  href={getSetmoreUrl()}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex items-center gap-2 rounded-full bg-deepRed px-4 py-2 text-sm font-semibold text-white transition duration-300 hover:bg-brandBlack"
+                >
+                  Open Setmore Calendar <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
+
+              <ul className="space-y-2 text-sm text-brandBlack/75">
                 <li className="inline-flex items-center gap-2"><Clock3 className="h-4 w-4 text-waterBlue" /> Instant confirmation after slot selection.</li>
                 <li className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-waterBlue" /> Intake details are saved before redirect.</li>
               </ul>
@@ -465,7 +549,7 @@ export default function BookingPage(): JSX.Element {
               <button
                 type="button"
                 onClick={goBack}
-                className="inline-flex items-center gap-2 rounded-full border border-waterBlue px-4 py-2 text-sm font-semibold text-waterBlue transition hover:bg-waterBlue/10"
+                className="inline-flex items-center gap-2 rounded-full border border-waterBlue px-4 py-2 text-sm font-semibold text-waterBlue transition duration-300 hover:bg-waterBlue/10"
               >
                 <ArrowLeft className="h-4 w-4" /> Back
               </button>
@@ -475,7 +559,7 @@ export default function BookingPage(): JSX.Element {
               <button
                 type="button"
                 onClick={goNext}
-                className="inline-flex items-center gap-2 rounded-full bg-deepRed px-5 py-2 text-sm font-semibold text-white transition hover:bg-brandBlack"
+                className="inline-flex items-center gap-2 rounded-full bg-deepRed px-5 py-2 text-sm font-semibold text-white transition duration-300 hover:bg-brandBlack"
               >
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
@@ -484,14 +568,18 @@ export default function BookingPage(): JSX.Element {
                 type="button"
                 onClick={() => void handleSubmitBooking()}
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-full bg-deepRed px-5 py-2 text-sm font-semibold text-white transition hover:bg-brandBlack disabled:opacity-65"
+                className="inline-flex items-center gap-2 rounded-full bg-deepRed px-5 py-2 text-sm font-semibold text-white transition duration-300 hover:bg-brandBlack disabled:opacity-65"
               >
                 {submitting ? 'Submitting...' : 'Submit and Continue'}
               </button>
             )}
           </div>
 
-          {statusMessage ? <p className="text-sm text-brandBlack/70">{statusMessage}</p> : null}
+          {statusMessage ? (
+            <p className={`text-sm ${statusMessage.toLowerCase().includes('failed') ? 'text-deepRed' : 'text-brandBlack/70'}`}>
+              {statusMessage}
+            </p>
+          ) : null}
         </div>
 
         <aside className="sticky top-28 h-fit rounded-2xl border border-black/10 bg-white shadow-sm">
@@ -507,7 +595,22 @@ export default function BookingPage(): JSX.Element {
                 <CarFront className="h-4 w-4 text-waterBlue" />
                 {activeVehicle ? getVehicleDisplayName(activeVehicle) : 'Vehicle'}
               </p>
+              <p className="mt-1 text-xs text-brandBlack/60">{activeVehicle ? getVehicleHint(activeVehicle) : ''}</p>
             </article>
+
+            {selectedVehicles.length > 0 ? (
+              <article className="rounded-xl border border-black/10 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-brandBlack/55">Booked Vehicles</p>
+                <ul className="mt-2 space-y-2">
+                  {selectedVehicles.map((vehicle) => (
+                    <li key={vehicle.id} className="flex items-center justify-between text-xs">
+                      <span className="text-brandBlack/75">{getVehicleDisplayName(vehicle)}</span>
+                      <span className="font-semibold text-brandBlack">{formatCurrency(getVehicleTotal(vehicle.id))}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ) : null}
 
             {selectedPackage ? (
               <article className="rounded-xl border border-black/10 p-3">
