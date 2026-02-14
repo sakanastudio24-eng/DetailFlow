@@ -1,0 +1,140 @@
+'use client';
+
+import Link from 'next/link';
+import { useState } from 'react';
+import { CircleHelp, ChevronDown, ChevronUp, Clock3, Droplets, CreditCard, Car } from 'lucide-react';
+
+interface FaqItem {
+  question: string;
+  answer: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+/**
+ * Returns the quick-help FAQ entries shown in the modal.
+ */
+function getQuickFaqs(): FaqItem[] {
+  return [
+    {
+      question: 'How long does a detail take?',
+      answer: 'Basic takes about 2-3 hours, Standard around 4 hours, and Premium around 6+ hours.',
+      icon: Clock3,
+    },
+    {
+      question: 'Do I need to provide water or power?',
+      answer: 'No. Mobile jobs are planned to run with our own water and power setup where available.',
+      icon: Droplets,
+    },
+    {
+      question: 'What forms of payment do you accept?',
+      answer: 'Card, cash, and approved digital payments are accepted after service completion.',
+      icon: CreditCard,
+    },
+    {
+      question: 'Can I book multiple cars at once?',
+      answer: 'Yes. Add vehicles in the dock, select services per vehicle, then book all in one flow.',
+      icon: Car,
+    },
+  ];
+}
+
+/**
+ * Renders a modal with high-priority answers and FAQ links.
+ */
+export function QuickHelpModal(): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const faqs = getQuickFaqs();
+
+  /**
+   * Toggles expansion state for one FAQ row.
+   */
+  function toggleFaq(index: number): void {
+    setExpandedIndex((current) => (current === index ? null : index));
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="relative rounded-full p-2 text-brandBlack transition duration-300 hover:bg-neutralGray hover:text-deepRed"
+        aria-label="Open quick help"
+      >
+        <CircleHelp className="h-5 w-5" />
+      </button>
+
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4" role="presentation">
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl transition-transform duration-300 animate-[fadeUp_0.3s_ease-out]">
+            <div className="flex items-center justify-between border-b border-black/10 px-5 py-4">
+              <div className="flex items-center gap-2">
+                <div className="rounded-full bg-waterBlue/20 p-2 text-waterBlue">
+                  <CircleHelp className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="font-heading text-2xl font-bold text-brandBlack">Quick Help</h2>
+                  <p className="text-sm text-brandBlack/60">Top questions from customers</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-full p-2 text-brandBlack/55 transition hover:bg-neutralGray hover:text-brandBlack"
+                aria-label="Close quick help"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="max-h-[65vh] space-y-2 overflow-y-auto px-5 py-4">
+              {faqs.map((faq, index) => {
+                const expanded = expandedIndex === index;
+                const Icon = faq.icon;
+
+                return (
+                  <article key={faq.question} className="rounded-xl border border-black/10 bg-white">
+                    <button
+                      type="button"
+                      onClick={() => toggleFaq(index)}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-neutralGray/60"
+                    >
+                      <span className="rounded-full bg-waterBlue/20 p-2 text-waterBlue">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <span className="flex-1 font-semibold text-brandBlack">{faq.question}</span>
+                      {expanded ? <ChevronUp className="h-4 w-4 text-brandBlack/55" /> : <ChevronDown className="h-4 w-4 text-brandBlack/55" />}
+                    </button>
+                    {expanded ? <p className="px-4 pb-4 text-sm text-brandBlack/75">{faq.answer}</p> : null}
+                  </article>
+                );
+              })}
+
+              <div className="rounded-xl border border-waterBlue/40 bg-waterBlue/10 p-4">
+                <p className="text-sm text-brandBlack/75">
+                  Need more details? View the full FAQ page or continue directly to booking.
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <Link
+                    href="/faq"
+                    onClick={() => setOpen(false)}
+                    className="rounded-full bg-deepRed px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-brandBlack"
+                  >
+                    View Full FAQ
+                  </Link>
+                  <Link
+                    href="/booking"
+                    onClick={() => setOpen(false)}
+                    className="rounded-full border border-waterBlue px-4 py-2 text-center text-sm font-semibold text-waterBlue transition hover:bg-waterBlue/10"
+                  >
+                    Book Now
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}

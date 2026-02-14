@@ -12,10 +12,12 @@ interface BookingContextValue {
   addVehicle: () => void;
   removeVehicle: (vehicleId: string) => void;
   updateVehicle: (vehicleId: string, updates: Partial<VehicleProfile>) => void;
+  setVehiclePackage: (vehicleId: string, packageId: string) => void;
   toggleServiceForVehicle: (vehicleId: string, service: ServiceOption) => void;
   getVehicleTotal: (vehicleId: string) => number;
   getGrandTotal: () => number;
   getVehicleServices: (vehicleId: string) => ServiceOption[];
+  getSelectedServiceCount: () => number;
   clearAll: () => void;
 }
 
@@ -38,6 +40,7 @@ function createDefaultVehicle(index: number): VehicleProfile {
     model: '',
     year: '',
     color: '',
+    size: 'small',
     serviceIds: [],
   };
 }
@@ -60,8 +63,13 @@ export function BookingProvider({ children }: BookingProviderProps): JSX.Element
       const parsed = JSON.parse(raw) as { vehicles: VehicleProfile[]; activeVehicleId: string };
 
       if (Array.isArray(parsed.vehicles) && parsed.vehicles.length > 0) {
-        setVehicles(parsed.vehicles);
-        setActiveVehicleId(parsed.activeVehicleId ?? parsed.vehicles[0].id);
+        const normalizedVehicles = parsed.vehicles.map((vehicle, index) => ({
+          ...createDefaultVehicle(index),
+          ...vehicle,
+          size: vehicle.size ?? 'small',
+        }));
+        setVehicles(normalizedVehicles);
+        setActiveVehicleId(parsed.activeVehicleId ?? normalizedVehicles[0].id);
       }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -117,6 +125,25 @@ export function BookingProvider({ children }: BookingProviderProps): JSX.Element
   }
 
   /**
+   * Sets exactly one selected package for a vehicle while preserving add-ons.
+   */
+  function setVehiclePackage(vehicleId: string, packageId: string): void {
+    setVehicles((current) =>
+      current.map((vehicle) => {
+        if (vehicle.id !== vehicleId) {
+          return vehicle;
+        }
+
+        const retainedAddons = vehicle.serviceIds.filter((serviceId) => !serviceId.startsWith('pkg-'));
+        return {
+          ...vehicle,
+          serviceIds: [packageId, ...retainedAddons],
+        };
+      }),
+    );
+  }
+
+  /**
    * Adds or removes a service selection for one vehicle.
    */
   function toggleServiceForVehicle(vehicleId: string, service: ServiceOption): void {
@@ -168,6 +195,13 @@ export function BookingProvider({ children }: BookingProviderProps): JSX.Element
   }
 
   /**
+   * Counts selected service rows across all vehicles.
+   */
+  function getSelectedServiceCount(): number {
+    return vehicles.reduce((count, vehicle) => count + vehicle.serviceIds.length, 0);
+  }
+
+  /**
    * Clears dock state and resets to a single empty vehicle.
    */
   function clearAll(): void {
@@ -184,10 +218,12 @@ export function BookingProvider({ children }: BookingProviderProps): JSX.Element
       addVehicle,
       removeVehicle,
       updateVehicle,
+      setVehiclePackage,
       toggleServiceForVehicle,
       getVehicleTotal,
       getGrandTotal,
       getVehicleServices,
+      getSelectedServiceCount,
       clearAll,
     }),
     [activeVehicleId, vehicles],

@@ -16,6 +16,7 @@ export interface VehicleProfile {
   model: string;
   year: string;
   color: string;
+  size: 'small' | 'medium' | 'large';
   serviceIds: string[];
 }
 
