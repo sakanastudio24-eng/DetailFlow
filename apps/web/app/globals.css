@@ -12,4 +12,10 @@
 
 body {
   margin: 0;
+  background: #f8f8f8;
+  color: #10150f;
+}
+
+a {
+  text-decoration: none;
 }

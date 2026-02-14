@@ -1,11 +1,24 @@
+import { SiteFooter } from '@/components/layout/site-footer';
+import { SiteHeader } from '@/components/layout/site-header';
+import { CtaSection } from '@/components/sections/cta-section';
+import { HeroSection } from '@/components/sections/hero-section';
+import { ResultsSection } from '@/components/sections/results-section';
+import { ServicesSection } from '@/components/sections/services-section';
+
 /**
- * Displays the homepage placeholder until Section C implementation is applied.
+ * Composes the first release homepage sections.
  */
 export default function HomePage(): JSX.Element {
   return (
-    <main className="mx-auto max-w-6xl px-4 py-16">
-      <h1 className="font-heading text-3xl font-bold">Cruz N Clean</h1>
-      <p className="mt-4 text-base">Section C will replace this with the mobile-first homepage.</p>
-    </main>
+    <>
+      <SiteHeader />
+      <main>
+        <HeroSection />
+        <ServicesSection />
+        <ResultsSection />
+        <CtaSection />
+      </main>
+      <SiteFooter />
+    </>
   );
 }
