@@ -98,7 +98,7 @@ function getPreviewConfigs(): Record<PreviewTab, EmailPreviewConfig> {
         "<td style='text-align:right;font-size:12px;color:#e5e7eb;'>Owner Alert</td>" +
         '</tr></table></div>' +
         "<div style='padding:20px;'>" +
-        "<p style='margin:0;font-size:23px;font-weight:800;color:#7f0912;'>New Booking Confirmed — Premium Detail — June 14</p>" +
+        "<p style='margin:0;font-size:23px;font-weight:800;color:#7f0912;'>New Booking Confirmed<br/>Premium Detail — June 14</p>" +
         "<p style='margin:8px 0 0 0;font-size:13px;color:#374151;'>This owner notification is sent after booking confirmation.</p>" +
         "<div style='margin-top:16px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;'>" +
         "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>" +

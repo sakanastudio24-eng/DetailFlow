@@ -192,7 +192,8 @@ def _build_owner_fallback_content(template_variables: dict[str, Any]) -> dict[st
         )
 
     lines = [
-        f"New Booking Confirmed — {primary_service} — {submitted_date}",
+        "New Booking Confirmed",
+        f"{primary_service} — {submitted_date}",
         "",
         f"Customer name: {customer['fullName']}",
         f"Phone: {customer['phone']}",
@@ -229,7 +230,10 @@ def _build_owner_fallback_content(template_variables: dict[str, Any]) -> dict[st
         "</table>"
         "</div>"
         "<div style='padding:20px;'>"
-        f"<p style='margin:0;font-size:23px;font-weight:800;color:#7f0912;'>New Booking Confirmed — {escape(primary_service)} — {escape(submitted_date)}</p>"
+        "<p style='margin:0;font-size:23px;font-weight:800;color:#7f0912;'>"
+        "New Booking Confirmed<br/>"
+        f"{escape(primary_service)} — {escape(submitted_date)}"
+        "</p>"
         "<p style='margin:8px 0 0 0;font-size:13px;color:#374151;'>This owner notification is sent after booking confirmation.</p>"
         "<div style='margin-top:16px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;'>"
         "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;'>"
