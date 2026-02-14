@@ -1,12 +1,25 @@
 from pydantic import BaseModel, EmailStr
 
 
-class BookingIntake(BaseModel):
-    full_name: str
+class CustomerBooking(BaseModel):
+    fullName: str
     email: EmailStr
     phone: str
-    vehicle_make: str
-    vehicle_model: str
-    vehicle_year: str
-    selected_services: list[str]
-    notes: str | None = None
+    zipCode: str
+    notes: str = ""
+    acceptedConsent: bool
+
+
+class VehicleSelection(BaseModel):
+    id: str
+    label: str
+    make: str
+    model: str
+    year: str
+    color: str
+    serviceIds: list[str]
+
+
+class BookingIntakeRequest(BaseModel):
+    customer: CustomerBooking
+    vehicles: list[VehicleSelection]
