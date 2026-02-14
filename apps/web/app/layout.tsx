@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Providers } from '@/app/providers';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -16,7 +17,9 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps): JSX.Element {
   return (
     <html lang="en">
-      <body className="bg-neutralGray text-brandBlack font-body antialiased">{children}</body>
+      <body className="bg-neutralGray text-brandBlack font-body antialiased">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

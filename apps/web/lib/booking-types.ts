@@ -1,0 +1,36 @@
+export type ServiceCategory = 'package' | 'addon';
+
+export interface ServiceOption {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: ServiceCategory;
+  duration: string;
+}
+
+export interface VehicleProfile {
+  id: string;
+  label: string;
+  make: string;
+  model: string;
+  year: string;
+  color: string;
+  serviceIds: string[];
+}
+
+export interface CustomerBookingForm {
+  fullName: string;
+  email: string;
+  phone: string;
+  zipCode: string;
+  notes: string;
+  acceptedConsent: boolean;
+}
+
+export interface ContactForm {
+  fullName: string;
+  email: string;
+  phone: string;
+  message: string;
+}

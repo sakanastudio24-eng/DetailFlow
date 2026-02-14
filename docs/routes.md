@@ -1,4 +1,4 @@
-# Routes (V1)
+# Routes (Current)
 
 ## Public
 - `/` Home
@@ -12,8 +12,8 @@
 - `/terms`
 
 ## Internal
-- `/styleguide` (development reference)
+- `/styleguide`
 
-## First Build Order
-1. `/` Home
-2. stop and review
+## Booking vs Contact
+- `/booking`: appointment intake + Setmore redirect
+- `/contact`: general questions only

@@ -1,14 +1,12 @@
-# Booking Flow (V1)
+# Booking Flow (Implemented V1)
 
-1. User enters car details and selected services on `/booking`.
-2. Frontend sends intake payload to FastAPI endpoint.
-3. API stores intake record in local JSON.
-4. API sends confirmation email to:
-   - business owner
-   - client
-5. Frontend redirects to Setmore for final appointment time booking.
+1. Customer configures services per vehicle in `/services`.
+2. Dock stores multiple vehicles and selected services in client state.
+3. Customer completes intake fields in `/booking`.
+4. Frontend submits intake payload to FastAPI `POST /booking-intakes`.
+5. API stores intake in `data/bookings.json`.
+6. Frontend redirects user to Setmore for final time-slot booking.
 
-## Pending Inputs
-- Final Setmore redirect URL format
-- Final email provider choice
-- Consent copy for email/SMS terms
+## Parallel Contact Flow
+- `/contact` posts non-booking questions to `POST /contact-messages`.
+- API stores contact messages in `data/contacts.json`.
