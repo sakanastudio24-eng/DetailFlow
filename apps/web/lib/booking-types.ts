@@ -32,6 +32,21 @@ export interface CustomerBookingForm {
   acceptedConsent: boolean;
 }
 
+export interface BookingVehicleRequest {
+  id: string;
+  label: string;
+  make: string;
+  model: string;
+  year: string;
+  color: string;
+  serviceIds: string[];
+}
+
+export interface BookingIntakeRequest {
+  customer: CustomerBookingForm;
+  vehicles: BookingVehicleRequest[];
+}
+
 export interface ContactForm {
   fullName: string;
   email: string;

@@ -1,4 +1,10 @@
-import type { ContactForm, CustomerBookingForm, VehicleProfile } from '@/lib/booking-types';
+import type {
+  BookingIntakeRequest,
+  BookingVehicleRequest,
+  ContactForm,
+  CustomerBookingForm,
+  VehicleProfile,
+} from '@/lib/booking-types';
 
 const DEFAULT_API_BASE = 'http://127.0.0.1:8000';
 
@@ -23,12 +29,27 @@ export async function submitBookingIntake(payload: {
   customer: CustomerBookingForm;
   vehicles: VehicleProfile[];
 }): Promise<void> {
+  const vehicles: BookingVehicleRequest[] = payload.vehicles.map((vehicle) => ({
+    id: vehicle.id,
+    label: vehicle.label,
+    make: vehicle.make,
+    model: vehicle.model,
+    year: vehicle.year,
+    color: vehicle.color,
+    serviceIds: vehicle.serviceIds,
+  }));
+
+  const requestPayload: BookingIntakeRequest = {
+    customer: payload.customer,
+    vehicles,
+  };
+
   const response = await fetch(`${getApiBaseUrl()}/booking-intakes`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(requestPayload),
   });
 
   if (!response.ok) {
