@@ -351,7 +351,7 @@ export default function BookingPage(): JSX.Element {
   }
 
   /**
-   * Submits booking intake and redirects customer to Setmore.
+   * Submits booking intake and shows confirmation before calendar scheduling.
    */
   async function handleSubmitBooking(): Promise<void> {
     const submissionErrors = validateSubmission(form, vehicles);
