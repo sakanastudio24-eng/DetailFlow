@@ -1,5 +1,4 @@
 import { SiteShell } from '@/components/layout/site-shell';
-import { CaseStudiesSection } from '@/components/sections/case-studies-section';
 import { CtaSection } from '@/components/sections/cta-section';
 import { GalleryPreviewSection } from '@/components/sections/gallery-preview-section';
 import { HeroSection } from '@/components/sections/hero-section';
@@ -27,7 +26,6 @@ export default function HomePage(): JSX.Element {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_12%,#8cc0d61f,transparent_40%)]" />
         <div className="relative">
           <GalleryPreviewSection />
-          <CaseStudiesSection />
           <ResultsSection />
         </div>
       </div>

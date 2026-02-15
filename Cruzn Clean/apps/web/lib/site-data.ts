@@ -22,16 +22,6 @@ export interface TestimonialItem {
   service: string;
 }
 
-export interface CaseStudyItem {
-  slug: string;
-  project: string;
-  status: 'live' | 'active' | 'under-construction';
-  summary: string;
-  stack: string[];
-  highlights: string[];
-  imagePlaceholder: string;
-}
-
 /**
  * Returns core service cards for the homepage teaser.
  */
@@ -108,56 +98,6 @@ export function getHomeTestimonials(): TestimonialItem[] {
       name: 'Chris M.',
       quote: 'Loved that I could set up two cars in one booking without any confusion.',
       service: 'Two-Vehicle Booking',
-    },
-  ];
-}
-
-/**
- * Returns portfolio case studies for cross-project showcase cards.
- */
-export function getCaseStudies(): CaseStudyItem[] {
-  return [
-    {
-      slug: 'ward-studio',
-      project: 'Ward Studio Positioning Website',
-      status: 'live',
-      summary:
-        'Marketing-focused website exported from Figma and implemented in Next.js with refined typography and section storytelling.',
-      stack: ['Next.js', 'TypeScript', 'Tailwind CSS', 'Figma'],
-      highlights: [
-        'Production Next.js app from design export',
-        'Design-system styling with reusable sections',
-        'Process + documentation pass included',
-      ],
-      imagePlaceholder: 'Add Ward Studio hero screenshot',
-    },
-    {
-      slug: 'inkbot',
-      project: 'InkBot Discord Bot',
-      status: 'active',
-      summary:
-        'Community collaboration bot that handles group requests, low-interest digest alerts, and reaction-driven workflow automation.',
-      stack: ['Python', 'discord.py', 'JSON Storage'],
-      highlights: [
-        'Reaction-based group request lifecycle',
-        'Digest reminder engine for low-interest requests',
-        'Operational docs and testing scenarios',
-      ],
-      imagePlaceholder: 'Add bot dashboard or command flow screenshot',
-    },
-    {
-      slug: 'big-adventure',
-      project: 'Big Adventure (Game Project)',
-      status: 'under-construction',
-      summary:
-        'Terminal-style RPG project with command parser, reducer-driven game state, and event pipeline integration in a modern web UI.',
-      stack: ['Next.js', 'React', 'TypeScript', 'xterm.js'],
-      highlights: [
-        'Turn-based command parser and reducer model',
-        'xterm event rendering + timer control',
-        'Under construction: gameplay and polish in progress',
-      ],
-      imagePlaceholder: 'Add gameplay terminal screenshot',
     },
   ];
 }
