@@ -23,6 +23,14 @@ Production-oriented detailing website portfolio project with a Next.js frontend 
 - `POST /contact-messages` contact form endpoint
 - `GET /health` health check
 
+## Endpoint Classification
+| Endpoint Group | Exposure | Risk Profile | Demo Behavior |
+| --- | --- | --- | --- |
+| `GET /health` | Public | Safe (no PII, no secrets) | Returns `{"status":"ok"}` |
+| `POST /booking-intakes`, `POST /cal-bookings` | Public | PII + write flow | Validate only in demo mode, no writes/emails |
+| `POST /contact-messages` | Public | PII + write flow | Validate only in demo mode, no writes |
+| `/template-admin/*` | Private/Admin | Sensitive operator controls | Hidden (`404`) when admin disabled |
+
 ### Template Admin Routes (Protected)
 All template-admin routes require:
 - `Authorization: Bearer <TEMPLATE_ADMIN_TOKEN>`
@@ -82,6 +90,9 @@ Optional:
 - `OWNER_BOOKING_MANAGE_URL` (supports `{booking_id}` placeholder)
 - `PUBLIC_SITE_URL`
 - `BOOKING_LIMIT_TIMEZONE` (default `America/Los_Angeles`)
+- `DEMO_MODE=true|false` (default `false`)
+- `ENABLE_TEMPLATE_ADMIN=true|false` (default `true`)
+- `API_CORS_ORIGINS` (comma-separated, defaults to localhost origins)
 
 ### Web `.env` keys
 - `NEXT_PUBLIC_API_BASE_URL` (default `http://127.0.0.1:8000`)
@@ -113,13 +124,34 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 Current status for demo use:
 - `GET /health`: ready.
 - `POST /booking-intakes` and `POST /cal-bookings`: demo-ready with strong validation, honeypot handling, and 3-vehicle/day policy.
-- `POST /template-admin/*`: protected by bearer token and suitable for operator-only demo use.
-- `POST /contact-messages`: functional, but lighter protections than booking flow.
+- `POST /contact-messages`: demo-ready with request validation and no PII persistence in demo mode.
+- `POST /template-admin/*`: bearer-protected in live mode and hidden in demo mode.
 
 Known limits before production hardening:
 - Booking rate limiting is still a placeholder (`is_booking_rate_limited` returns `False`).
 - Contact endpoint currently has no rate-limit/honeypot guard.
 - Data persistence is local JSON files (no DB transactions or concurrency controls).
+
+Demo vs production environment defaults:
+- Demo deployment:
+  - `DEMO_MODE=true`
+  - `ENABLE_TEMPLATE_ADMIN=false`
+- Production/client deployment:
+  - `DEMO_MODE=false`
+  - `ENABLE_TEMPLATE_ADMIN=true`
+  - `TEMPLATE_ADMIN_TOKEN=<secret>`
+
+Behavior details in `DEMO_MODE=true`:
+- `POST /booking-intakes` and `POST /cal-bookings`:
+  - keeps validation and booking policy checks,
+  - returns accepted demo response with `mode`, `bookingId`, and `receivedAt`,
+  - does not write files,
+  - does not send emails.
+- `POST /contact-messages`:
+  - validates and returns accepted response,
+  - does not write files.
+- `/template-admin/*`:
+  - returns `404` when `ENABLE_TEMPLATE_ADMIN=false`.
 
 Minimum pre-demo security checklist:
 1. Use strong, unique values for `RESEND_API_KEY` and `TEMPLATE_ADMIN_TOKEN`.
