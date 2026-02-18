@@ -109,6 +109,29 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - Keep template admin token private and rotate if exposed.
 - `/email-preview` is mock-only and does not use provider credentials.
 
+## Endpoint Security + Demo Readiness
+Current status for demo use:
+- `GET /health`: ready.
+- `POST /booking-intakes` and `POST /cal-bookings`: demo-ready with strong validation, honeypot handling, and 3-vehicle/day policy.
+- `POST /template-admin/*`: protected by bearer token and suitable for operator-only demo use.
+- `POST /contact-messages`: functional, but lighter protections than booking flow.
+
+Known limits before production hardening:
+- Booking rate limiting is still a placeholder (`is_booking_rate_limited` returns `False`).
+- Contact endpoint currently has no rate-limit/honeypot guard.
+- Data persistence is local JSON files (no DB transactions or concurrency controls).
+
+Minimum pre-demo security checklist:
+1. Use strong, unique values for `RESEND_API_KEY` and `TEMPLATE_ADMIN_TOKEN`.
+2. Verify `EMAIL_FROM` sender domain (SPF/DKIM) in Resend.
+3. Set `BOOKING_OWNER_EMAIL` and `EMAIL_REPLY_TO` to real monitored inboxes.
+4. Keep template-admin token private and never expose it in frontend code.
+5. Run API behind HTTPS (localhost exception for development only).
+6. Confirm `PUBLIC_SITE_URL` and Cal.com URL point to your demo environment.
+
+See full operational handoff steps in:
+- `docs/client-handoff-checklist.md`
+
 ## Git Commit Notes
 - Commit by functional section (small, reviewable commits).
 - Use scoped commit messages like `feat(booking): ...` or `docs(api): ...`.
@@ -118,6 +141,7 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - `docs/architecture.md`
 - `docs/booking-flow.md`
 - `docs/booking-edge-rules.md`
+- `docs/client-handoff-checklist.md`
 - `docs/git-commit-notes.md`
 - `docs/routes.md`
 - `docs/email-confirmation-spec.md`
