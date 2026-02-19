@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Safe Docs Structure"
+  short_description: "Safe Git workflow for open-source docs systems"
+  default_prompt: "Apply safe Git and documentation structure workflows for small, medium, and complex systems."
