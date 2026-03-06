@@ -115,6 +115,36 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
+## Vercel Subdomain Deployment
+The web app lives in `apps/web`. Root-level `vercel.json` is configured to install and build from that directory.
+
+### One-time Vercel setup
+1. Import this repository in Vercel.
+2. Confirm `Framework Preset = Next.js`.
+3. Confirm `Production Branch = main`.
+4. Add web env var `NEXT_PUBLIC_API_BASE_URL=<your-api-origin>`.
+5. Deploy.
+
+### Attach your portfolio subdomain
+1. Open Vercel project `Settings > Domains`.
+2. Add subdomain (example: `detailflow.yourdomain.com`).
+3. Create the CNAME record in your DNS provider using Vercel's value.
+4. Wait for HTTPS certificate issuance and verify the production URL.
+
+If logs show `No Next.js version detected`, verify Vercel is pointed at this repo path and has not been linked to a parent folder.
+
+## Accessibility Baseline
+Current shared UI accessibility baseline:
+- Skip link to main content in global layout.
+- Landmarks and labeled navigation regions.
+- `aria-expanded`/`aria-controls` on cart and quick-help interactions.
+- Keyboard-visible focus styles for links, buttons, and form fields.
+
+Pre-launch checks:
+1. Keyboard-only pass on Home, Services, Booking, Contact.
+2. Lighthouse accessibility audit on Vercel preview and production URLs.
+3. 200% zoom pass on desktop and mobile layouts.
+
 ## Security Notes
 - Never commit real API keys or tokens.
 - Keep template admin token private and rotate if exposed.
@@ -174,8 +204,11 @@ See full operational handoff steps in:
 - `docs/booking-flow.md`
 - `docs/booking-edge-rules.md`
 - `docs/client-handoff-checklist.md`
+- `docs/accessibility-readiness.md`
 - `docs/git-commit-notes.md`
+- `docs/project-overview.md`
 - `docs/routes.md`
+- `docs/vercel-subdomain-deployment.md`
 - `docs/email-confirmation-spec.md`
 - `docs/email-api-contract.md`
 - `docs/email-env-matrix.md`
