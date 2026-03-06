@@ -22,3 +22,9 @@ env.example
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Local nested repos (not tracked by this repo)
+Big-Adventure/
+Discord-bot/
+Portfoli-website/
+Mantaience-calculator/
