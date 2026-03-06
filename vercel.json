@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "installCommand": "npm --prefix DetailFlow/apps/web ci",
+  "installCommand": "npm install --no-fund --no-audit && npm --prefix DetailFlow/apps/web ci",
   "buildCommand": "npm run vercel-build",
   "devCommand": "npm --prefix DetailFlow/apps/web run dev"
 }

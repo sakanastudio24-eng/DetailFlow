@@ -7,8 +7,8 @@
     "start": "npm --prefix DetailFlow/apps/web run start",
     "vercel-build": "npm --prefix DetailFlow/apps/web run build"
   },
-  "devDependencies": {
-    "next": "14.2.5"
+  "dependencies": {
+    "next": "14.2.35"
   },
   "engines": {
     "node": "20.x"
