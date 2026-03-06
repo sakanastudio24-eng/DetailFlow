@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  ArrowLeft,
   CalendarDays,
   FileText,
   Home,
@@ -21,6 +22,7 @@ import { getVehicleDisplayName } from '@/lib/vehicle-utils';
 interface NavLinkItem {
   href: string;
   label: string;
+  external?: boolean;
 }
 
 interface MobileNavItem extends NavLinkItem {
@@ -32,6 +34,7 @@ interface MobileNavItem extends NavLinkItem {
  */
 function getNavLinks(): NavLinkItem[] {
   return [
+    { href: 'https://zward.studio', label: 'zward.studio', external: true },
     { href: '/', label: 'Home' },
     { href: '/services', label: 'Services' },
     { href: '/gallery', label: 'Gallery' },
@@ -136,6 +139,19 @@ export function SiteHeader(): JSX.Element {
 
           <nav className="hidden min-w-0 items-center justify-center gap-8 xl:flex" aria-label="Primary">
             {links.map((link) => {
+              if (link.external) {
+                return (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-black/20 px-3 py-1.5 text-sm font-semibold text-brandBlack transition hover:border-deepRed hover:text-deepRed"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to {link.label}
+                  </a>
+                );
+              }
+
               const active = isActivePath(pathname, link.href);
               return (
                 <Link
