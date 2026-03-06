@@ -1,0 +1,16 @@
+{
+  "name": "portfolio-root-build",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix DetailFlow/apps/web run dev",
+    "build": "npm --prefix DetailFlow/apps/web run build",
+    "start": "npm --prefix DetailFlow/apps/web run start",
+    "vercel-build": "npm --prefix DetailFlow/apps/web run build"
+  },
+  "devDependencies": {
+    "next": "14.2.5"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}
