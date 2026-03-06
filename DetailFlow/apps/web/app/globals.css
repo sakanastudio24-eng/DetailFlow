@@ -26,6 +26,33 @@ a {
   text-decoration: none;
 }
 
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #0875c2;
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 999;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #111111;
+  font-weight: 700;
+  padding: 0.65rem 1rem;
+  transform: translateY(-150%);
+  transition: transform 0.2s ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 .site-frame {
   width: 100%;
   max-width: var(--layout-max-width);

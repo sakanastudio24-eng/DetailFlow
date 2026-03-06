@@ -82,6 +82,8 @@ export function SiteHeader(): JSX.Element {
   const selectedServiceCount = getSelectedServiceCount();
   const [cartOpen, setCartOpen] = useState(false);
   const cartRef = useRef<HTMLDivElement>(null);
+  const desktopCartSummaryId = 'desktop-cart-summary';
+  const mobileCartSummaryId = 'mobile-cart-summary';
 
   const vehiclesWithSelections = useMemo(
     () => vehicles.filter((vehicle) => getVehicleServices(vehicle.id).length > 0),
@@ -132,13 +134,14 @@ export function SiteHeader(): JSX.Element {
             <span>DetailFlow</span>
           </Link>
 
-          <nav className="hidden min-w-0 items-center justify-center gap-8 xl:flex">
+          <nav className="hidden min-w-0 items-center justify-center gap-8 xl:flex" aria-label="Primary">
             {links.map((link) => {
               const active = isActivePath(pathname, link.href);
               return (
                 <Link
                   key={link.href}
                   href={link.href}
+                  aria-current={active ? 'page' : undefined}
                   className={`relative py-1 text-sm font-medium transition duration-300 after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:bg-deepRed after:transition-all after:duration-300 ${
                     active
                       ? 'text-brandBlack after:w-full'
@@ -172,6 +175,9 @@ export function SiteHeader(): JSX.Element {
               onClick={() => setCartOpen((current) => !current)}
               className="relative rounded-full p-2 text-brandBlack transition duration-300 hover:bg-neutralGray hover:text-deepRed"
               aria-label="Open cart summary"
+              aria-haspopup="dialog"
+              aria-expanded={cartOpen}
+              aria-controls={desktopCartSummaryId}
             >
               <ShoppingCart className="h-5 w-5" />
               {selectedServiceCount > 0 ? (
@@ -182,7 +188,12 @@ export function SiteHeader(): JSX.Element {
             </button>
 
             {cartOpen ? (
-              <div className="absolute right-6 top-[74px] z-50 w-[330px] rounded-2xl border border-black/10 bg-white p-4 shadow-2xl">
+              <div
+                id={desktopCartSummaryId}
+                role="region"
+                aria-label="Cart summary"
+                className="absolute right-6 top-[74px] z-50 w-[330px] rounded-2xl border border-black/10 bg-white p-4 shadow-2xl"
+              >
                 <h3 className="font-heading text-lg font-semibold text-brandBlack">Cart Summary</h3>
 
                 {vehiclesWithSelections.length === 0 ? (
@@ -251,6 +262,9 @@ export function SiteHeader(): JSX.Element {
               onClick={() => setCartOpen((current) => !current)}
               className="relative rounded-full p-2 text-brandBlack transition duration-300 hover:bg-neutralGray"
               aria-label="Open cart summary"
+              aria-haspopup="dialog"
+              aria-expanded={cartOpen}
+              aria-controls={mobileCartSummaryId}
             >
               <ShoppingCart className="h-5 w-5" />
               {selectedServiceCount > 0 ? (
@@ -261,7 +275,12 @@ export function SiteHeader(): JSX.Element {
             </button>
 
             {cartOpen ? (
-              <div className="fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[95] rounded-2xl border border-black/10 bg-white p-4 shadow-2xl">
+              <div
+                id={mobileCartSummaryId}
+                role="region"
+                aria-label="Cart summary"
+                className="fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[95] rounded-2xl border border-black/10 bg-white p-4 shadow-2xl"
+              >
                 <h3 className="font-heading text-lg font-semibold text-brandBlack">Cart Summary</h3>
                 <p className="mt-1 text-xs text-brandBlack/60">{vehiclesWithSelections.length} vehicles selected</p>
                 <div className="mt-2 border-t border-black/10 pt-2 text-right text-sm font-semibold text-deepRed">${getGrandTotal()}</div>
@@ -279,7 +298,10 @@ export function SiteHeader(): JSX.Element {
         </div>
       </header>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-black/10 bg-white/95 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-2 backdrop-blur-md xl:hidden">
+      <nav
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-black/10 bg-white/95 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-2 backdrop-blur-md xl:hidden"
+        aria-label="Mobile navigation"
+      >
         <div className="mx-auto grid w-full max-w-[760px] grid-cols-6 gap-1 px-2 sm:px-4">
           {mobileLinks.map((link) => {
             const active = isActivePath(pathname, link.href);
@@ -290,6 +312,7 @@ export function SiteHeader(): JSX.Element {
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={active ? 'page' : undefined}
                 className={`mobile-bottom-nav-item flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-semibold transition-all duration-300 ${
                   bookingLink
                     ? active

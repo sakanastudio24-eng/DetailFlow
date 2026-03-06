@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CircleHelp, ChevronDown, ChevronUp, Clock3, Droplets, CreditCard, Car } from 'lucide-react';
 
@@ -46,6 +46,9 @@ export function QuickHelpModal(): JSX.Element {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogId = 'quick-help-dialog';
+  const descriptionId = 'quick-help-description';
   const faqs = getQuickFaqs();
 
   useEffect(() => {
@@ -76,6 +79,7 @@ export function QuickHelpModal(): JSX.Element {
     }
 
     document.addEventListener('keydown', onKeydown);
+    window.requestAnimationFrame(() => dialogRef.current?.focus());
 
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -98,6 +102,9 @@ export function QuickHelpModal(): JSX.Element {
         onClick={() => setOpen(true)}
         className="relative rounded-full p-2 text-brandBlack transition duration-300 hover:bg-neutralGray hover:text-deepRed"
         aria-label="Open quick help"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={dialogId}
       >
         <CircleHelp className="h-5 w-5" />
       </button>
@@ -113,6 +120,10 @@ export function QuickHelpModal(): JSX.Element {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="quick-help-title"
+                aria-describedby={descriptionId}
+                id={dialogId}
+                tabIndex={-1}
+                ref={dialogRef}
                 className="relative my-auto w-full max-w-2xl rounded-2xl border border-black/10 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition-transform duration-300 animate-[fadeUp_0.25s_ease-out]"
                 onClick={(event) => event.stopPropagation()}
               >
@@ -125,7 +136,9 @@ export function QuickHelpModal(): JSX.Element {
                       <h2 id="quick-help-title" className="font-heading text-xl font-semibold text-brandBlack sm:text-2xl">
                         Quick Help
                       </h2>
-                      <p className="text-sm text-brandBlack/60">Top questions from customers</p>
+                      <p id={descriptionId} className="text-sm text-brandBlack/60">
+                        Top questions from customers
+                      </p>
                     </div>
                   </div>
                   <button
@@ -148,6 +161,8 @@ export function QuickHelpModal(): JSX.Element {
                         <button
                           type="button"
                           onClick={() => toggleFaq(index)}
+                          aria-expanded={expanded}
+                          aria-controls={`quick-help-faq-answer-${index}`}
                           className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-neutralGray/60"
                         >
                           <span className="rounded-full bg-waterBlue/20 p-2 text-waterBlue">
@@ -156,7 +171,11 @@ export function QuickHelpModal(): JSX.Element {
                           <span className="flex-1 text-sm font-semibold text-brandBlack">{faq.question}</span>
                           {expanded ? <ChevronUp className="h-4 w-4 text-brandBlack/55" /> : <ChevronDown className="h-4 w-4 text-brandBlack/55" />}
                         </button>
-                        {expanded ? <p className="px-4 pb-4 text-sm text-brandBlack/75">{faq.answer}</p> : null}
+                        {expanded ? (
+                          <p id={`quick-help-faq-answer-${index}`} className="px-4 pb-4 text-sm text-brandBlack/75">
+                            {faq.answer}
+                          </p>
+                        ) : null}
                       </article>
                     );
                   })}

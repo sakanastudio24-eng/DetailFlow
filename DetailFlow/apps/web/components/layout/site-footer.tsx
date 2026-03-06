@@ -21,7 +21,7 @@ export function SiteFooter(): JSX.Element {
           </a>
         </div>
 
-        <div>
+        <nav aria-label="Footer navigation">
           <h3 className="font-heading text-sm font-semibold uppercase tracking-[0.14em] text-white/80">Navigate</h3>
           <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
             <Link href="/" className="text-white/80 transition hover:text-waterBlue">Home</Link>
@@ -32,9 +32,9 @@ export function SiteFooter(): JSX.Element {
             <Link href="/contact" className="text-white/80 transition hover:text-waterBlue">Contact</Link>
             <Link href="/faq" className="text-white/80 transition hover:text-waterBlue">FAQ</Link>
           </div>
-        </div>
+        </nav>
 
-        <div>
+        <nav aria-label="Footer legal">
           <h3 className="font-heading text-sm font-semibold uppercase tracking-[0.14em] text-white/80">Legal</h3>
           <div className="mt-3 flex flex-col gap-2 text-sm">
             <Link href="/privacy" className="text-white/80 transition hover:text-waterBlue">Privacy Policy</Link>
@@ -45,7 +45,7 @@ export function SiteFooter(): JSX.Element {
             <p className="text-xs uppercase tracking-[0.14em] text-white/55">Business Hours</p>
             <p className="mt-1 text-sm text-white/80">Mon-Sat 8:00AM - 6:00PM</p>
           </div>
-        </div>
+        </nav>
       </div>
 
       <div className="site-frame pb-10">

@@ -12,7 +12,9 @@ export function SiteShell({ children }: SiteShellProps): JSX.Element {
   return (
     <>
       <SiteHeader />
-      <main>{children}</main>
+      <main id="main-content" tabIndex={-1}>
+        {children}
+      </main>
       <SiteFooter />
     </>
   );
